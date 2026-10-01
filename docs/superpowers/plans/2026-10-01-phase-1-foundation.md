@@ -2229,7 +2229,7 @@ class MoneyText extends StatelessWidget {
   Widget build(BuildContext context) {
     final number =
         Money.format(amount, decimals: currency.decimals, showPlus: showPlus);
-    final text = '⁦$number⁩';
+    final text = '\u2066$number\u2069';
     return Text(showSymbol ? '$text ${currency.symbol}' : text, style: style);
   }
 }
@@ -2927,7 +2927,7 @@ class AmountDisplay extends StatelessWidget {
         const Text('المبلغ', style: TextStyle(color: AppColors.muted, fontSize: 13)),
         const SizedBox(height: 4),
         Text(
-          '⁦$shown⁩ ${currency.symbol}',
+          '\u2066$shown\u2069 ${currency.symbol}',
           style: const TextStyle(
               fontSize: 44, fontWeight: FontWeight.w700, color: AppColors.ink),
         ),
