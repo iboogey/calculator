@@ -4184,11 +4184,16 @@ git add lib/app/modules/settings test/modules/settings && git commit -m "feat: a
 ```dart
 // file: test/app_test.dart
 import 'package:calculator/app/app_widget.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'helpers/test_services.dart';
 
 Future<void> boot(WidgetTester tester) async {
+  // A phone-sized screen (390×844 points), like the mockup.
+  tester.view.physicalSize = const Size(1170, 2532);
+  tester.view.devicePixelRatio = 3;
+  addTearDown(tester.view.reset);
   await tester.runAsync(setUpTestServices);
   await tester.runAsync(() async {
     await tester.pumpWidget(const AppWidget());
@@ -4199,7 +4204,9 @@ Future<void> boot(WidgetTester tester) async {
 
 /// Lets real database work finish, then draws the result.
 Future<void> idle(WidgetTester tester) async {
+  await tester.pump();
   await tester.runAsync(settle);
+  await tester.pump(const Duration(seconds: 1));
   await tester.pump(const Duration(seconds: 1));
 }
 

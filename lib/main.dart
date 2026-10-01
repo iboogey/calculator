@@ -1,5 +1,10 @@
 import 'package:flutter/material.dart';
 
-void main() {
-  runApp(const MaterialApp(home: Scaffold(body: Center(child: Text('مصاريفي')))));
+import 'app/app_widget.dart';
+import 'app/bindings/initial_binding.dart';
+
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await InitialBinding.initServices();
+  runApp(const AppWidget());
 }
