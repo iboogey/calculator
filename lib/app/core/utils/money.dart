@@ -27,21 +27,25 @@ abstract final class Money {
     return value > 0 ? value : null;
   }
 
-  /// Formats [amount] with thousands separators and [decimals] fraction
-  /// digits: 1250000 → "1,250.000". Negative amounts get a leading "-".
+  /// Formats [amount] with thousands separators and [decimals] (0–3) fraction
+  /// digits: 1250000 → "1,250.000", 1255 with 2 decimals → "1.26".
+  /// Negative amounts get a leading "-".
   static String format(
     int amount, {
     required int decimals,
     bool showPlus = false,
   }) {
-    final absolute = amount.abs();
-    final buffer = StringBuffer(_group(absolute ~/ scale));
+    // Round half away from zero to the shown precision.
+    final unit = const [1000, 100, 10, 1][decimals];
+    final rounded = (amount.abs() + unit ~/ 2) ~/ unit * unit;
+    final buffer = StringBuffer(_group(rounded ~/ scale));
     if (decimals > 0) {
-      final fraction = (absolute % scale).toString().padLeft(3, '0');
+      final fraction = (rounded % scale).toString().padLeft(3, '0');
       buffer
         ..write('.')
         ..write(fraction.substring(0, decimals));
     }
+    if (rounded == 0) return buffer.toString();
     if (amount < 0) return '-$buffer';
     if (showPlus && amount > 0) return '+$buffer';
     return buffer.toString();

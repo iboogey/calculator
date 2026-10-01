@@ -25,8 +25,14 @@ class PeriodSwitcher extends StatelessWidget {
           icon: const Icon(Icons.chevron_right),
           onPressed: onPrevious,
         ),
-        Text(period.label,
-            style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
+        Flexible(
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(period.label,
+                style:
+                    const TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
+          ),
+        ),
         IconButton(
           tooltip: 'الفترة التالية',
           icon: const Icon(Icons.chevron_left),

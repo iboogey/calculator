@@ -54,14 +54,17 @@ class TransactionsView extends GetView<TransactionsController> {
   }
 
   void _deleteWithUndo(BuildContext context, TransactionRecord record) {
-    controller.delete(record);
+    // Captured now: the SnackBar can outlive this screen (and its controller)
+    // after a tab switch.
+    final transactions = controller;
+    transactions.delete(record);
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
       ..showSnackBar(SnackBar(
         content: const Text('انحذفت العملية'),
         action: SnackBarAction(
           label: 'تراجع',
-          onPressed: () => controller.undoDelete(record),
+          onPressed: () => transactions.undoDelete(record),
         ),
       ));
   }

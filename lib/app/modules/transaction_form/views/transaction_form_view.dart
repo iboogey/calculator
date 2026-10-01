@@ -129,9 +129,6 @@ class TransactionFormView extends GetView<TransactionFormController> {
         ],
       ),
     );
-    if (confirmed == true) {
-      await controller.delete();
-      Get.back();
-    }
+    if (confirmed == true && await controller.delete()) Get.back();
   }
 }

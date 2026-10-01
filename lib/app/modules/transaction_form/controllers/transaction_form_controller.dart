@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter/widgets.dart';
 import 'package:get/get.dart';
 
@@ -31,19 +33,27 @@ class TransactionFormController extends GetxController {
   final categoryId = RxnInt();
   final date = DateKeys.dateOnly(DateTime.now()).obs;
   final isEditing = false.obs;
+  final isSaving = false.obs;
   final _allCategories = <TransactionCategory>[].obs;
   final noteController = TextEditingController();
 
   TransactionRecord? _editing;
+
+  /// Fraction digits of the edited amount, so a 3-decimal amount saved
+  /// before a switch to a 2-decimal currency stays editable.
+  int _editingDecimals = 0;
 
   /// Completes when categories (and the edited record) are loaded.
   late final Future<void> ready;
 
   Currency get currency => settings.currency;
 
-  int? get amount => Money.parse(amountText.value, decimals: currency.decimals);
+  int get _inputDecimals => max(currency.decimals, _editingDecimals);
 
-  bool get canSave => amount != null && categoryId.value != null;
+  int? get amount => Money.parse(amountText.value, decimals: _inputDecimals);
+
+  bool get canSave =>
+      !isSaving.value && amount != null && categoryId.value != null;
 
   List<TransactionCategory> get visibleCategories =>
       _allCategories.where((c) => c.kind == kind.value).toList();
@@ -63,6 +73,8 @@ class TransactionFormController extends GetxController {
     isEditing.value = true;
     kind.value = record.kind;
     amountText.value = Money.toEditable(record.amount);
+    final dot = amountText.value.indexOf('.');
+    _editingDecimals = dot == -1 ? 0 : amountText.value.length - dot - 1;
     categoryId.value = record.categoryId;
     noteController.text = record.note ?? '';
     date.value = record.date;
@@ -75,7 +87,7 @@ class TransactionFormController extends GetxController {
   }
 
   void pressKey(String key) => amountText.value =
-      AmountInput.append(amountText.value, key, decimals: currency.decimals);
+      AmountInput.append(amountText.value, key, decimals: _inputDecimals);
 
   void backspace() => amountText.value = AmountInput.backspace(amountText.value);
 
@@ -83,8 +95,19 @@ class TransactionFormController extends GetxController {
 
   void setDate(DateTime value) => date.value = DateKeys.dateOnly(value);
 
-  /// Saves the form. Returns false (and saves nothing) when it is incomplete.
+  /// Saves the form. Returns false (and saves nothing) when it is incomplete
+  /// or a save is already running, so a double tap cannot save twice.
   Future<bool> save() async {
+    if (!canSave) return false;
+    isSaving.value = true;
+    try {
+      return await _save();
+    } finally {
+      isSaving.value = false;
+    }
+  }
+
+  Future<bool> _save() async {
     final value = amount;
     final category = categoryId.value;
     if (value == null || category == null) return false;
@@ -110,9 +133,18 @@ class TransactionFormController extends GetxController {
     return true;
   }
 
-  Future<void> delete() async {
+  /// Deletes the edited record. Returns false when there is nothing to
+  /// delete or a save/delete is already running.
+  Future<bool> delete() async {
     final id = _editing?.id;
-    if (id != null) await transactions.delete(id);
+    if (id == null || isSaving.value) return false;
+    isSaving.value = true;
+    try {
+      await transactions.delete(id);
+      return true;
+    } finally {
+      isSaving.value = false;
+    }
   }
 
   @override

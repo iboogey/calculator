@@ -2,6 +2,7 @@ import 'package:calculator/app/core/utils/date_utils.dart';
 import 'package:calculator/app/data/models/enums.dart';
 import 'package:calculator/app/data/repositories/transaction_repository.dart';
 import 'package:calculator/app/modules/transaction_form/controllers/transaction_form_controller.dart';
+import 'package:calculator/app/services/settings_service.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 
@@ -108,5 +109,29 @@ void main() {
     final c = await open(editId: existing.id);
     await c.delete();
     expect(await repo().getAll(), isEmpty);
+  });
+
+  test('a second save while the first is still running is ignored', () async {
+    final c = await open();
+    c.pressKey('5');
+    c.selectCategory(foodCategoryId);
+    final results = await Future.wait([c.save(), c.save()]);
+    expect(results, [true, false]);
+    expect(await repo().getAll(), hasLength(1));
+  });
+
+  test('an amount more precise than a newly chosen currency can still be edited', () async {
+    final existing = await repo().add(expense(1255, DateTime(2026, 9, 20)));
+    final settings = Get.find<SettingsService>();
+    await settings.update(settings.settings.value
+        .copyWith(currencyCode: 'USD', currencyDecimals: 2));
+    final c = await open(editId: existing.id);
+    expect(c.amountText.value, '1.255');
+    expect(c.canSave, isTrue);
+    c.selectCategory(2);
+    expect(await c.save(), isTrue);
+    final saved = (await repo().getAll()).single;
+    expect(saved.amount, 1255);
+    expect(saved.categoryId, 2);
   });
 }

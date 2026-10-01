@@ -64,4 +64,17 @@ void main() {
     expect(Money.toEditable(12500), '12.5');
     expect(Money.toEditable(12000), '12');
   });
+
+  test('format rounds half away from zero when showing fewer decimals', () {
+    expect(Money.format(1255, decimals: 2), '1.26');
+    expect(Money.format(1254, decimals: 2), '1.25');
+    expect(Money.format(-1255, decimals: 2), '-1.26');
+    expect(Money.format(999995, decimals: 2), '1,000.00');
+    expect(Money.format(1500, decimals: 0), '2');
+  });
+
+  test('an amount that rounds to zero shows no sign', () {
+    expect(Money.format(-4, decimals: 2), '0.00');
+    expect(Money.format(4, decimals: 2, showPlus: true), '0.00');
+  });
 }
