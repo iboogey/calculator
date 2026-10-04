@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
+import 'fake_files.dart';
 import 'fake_notifications.dart';
 
 /// Registers every app service and repository against a fresh in-memory
@@ -17,6 +18,7 @@ Future<FakeNotificationProvider> setUpTestServices() async {
     factory: databaseFactoryFfi,
     path: inMemoryDatabasePath,
     notifications: notifications,
+    files: FakeFileExchangeProvider(),
   );
   return notifications;
 }
