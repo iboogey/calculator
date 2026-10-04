@@ -1,5 +1,7 @@
 import 'package:get/get.dart';
 
+import '../modules/budgets/bindings/budgets_binding.dart';
+import '../modules/budgets/views/budgets_view.dart';
 import '../modules/home/bindings/home_binding.dart';
 import '../modules/home/views/home_view.dart';
 import '../modules/settings/bindings/settings_binding.dart';
@@ -24,6 +26,12 @@ abstract final class AppPages {
       name: Routes.transactions,
       page: () => const TransactionsView(),
       binding: TransactionsBinding(),
+      transition: Transition.noTransition,
+    ),
+    GetPage(
+      name: Routes.budgets,
+      page: () => const BudgetsView(),
+      binding: BudgetsBinding(),
       transition: Transition.noTransition,
     ),
     GetPage(
