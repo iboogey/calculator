@@ -5,12 +5,12 @@ import '../../../core/logic/budget_status.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../data/models/transaction_category.dart';
 import '../../../routes/app_routes.dart';
+import '../../../widgets/amount_dialog.dart';
 import '../../../widgets/app_bottom_nav.dart';
 import '../../../widgets/category_avatar.dart';
 import '../../../widgets/empty_state.dart';
 import '../../../widgets/section_header.dart';
 import '../controllers/budgets_controller.dart';
-import '../widgets/budget_limit_dialog.dart';
 import '../widgets/budget_progress_tile.dart';
 import '../widgets/recurring_summary.dart';
 
@@ -109,18 +109,19 @@ class BudgetsView extends GetView<BudgetsController> {
     TransactionCategory category,
     BudgetStatus? current,
   ) async {
-    final result = await showDialog<BudgetLimitResult>(
+    final result = await showDialog<AmountDialogResult>(
       context: context,
-      builder: (context) => BudgetLimitDialog(
-        categoryName: category.name,
+      builder: (context) => AmountDialog(
+        title: 'ميزانية ${category.name} الشهرية',
         currency: controller.currency,
-        currentLimit: current?.limit,
+        initialAmount: current?.limit,
+        removeLabel: current == null ? null : 'حذف الميزانية',
       ),
     );
     switch (result) {
-      case RemoveBudgetLimit():
+      case RemoveAmount():
         await controller.removeLimit(category.id!);
-      case SaveBudgetLimit(:final text):
+      case SaveAmount(:final text):
         final saved = await controller.setLimit(category.id!, text);
         if (!saved && context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(

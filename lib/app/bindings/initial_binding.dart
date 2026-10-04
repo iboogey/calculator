@@ -1,6 +1,7 @@
 import 'package:get/get.dart';
 import 'package:sqflite/sqflite.dart';
 
+import '../data/providers/file_exchange_provider.dart';
 import '../data/providers/notification_provider.dart';
 import '../data/repositories/budget_repository.dart';
 import '../data/repositories/category_repository.dart';
@@ -9,6 +10,7 @@ import '../data/repositories/savings_repository.dart';
 import '../data/repositories/settings_repository.dart';
 import '../data/repositories/template_repository.dart';
 import '../data/repositories/transaction_repository.dart';
+import '../services/backup_service.dart';
 import '../services/budget_alert_service.dart';
 import '../services/database_service.dart';
 import '../services/message_service.dart';
@@ -24,6 +26,7 @@ abstract final class InitialBinding {
     DatabaseFactory? factory,
     String? path,
     NotificationProvider? notifications,
+    FileExchangeProvider? files,
   }) async {
     final database = await Get.putAsync(
         () => DatabaseService(factory: factory, path: path).init(),
@@ -61,5 +64,12 @@ abstract final class InitialBinding {
     await Get.putAsync(
         () => StartupService(recurring: recurring, database: database).init(),
         permanent: true);
+    final fileExchange = Get.put<FileExchangeProvider>(
+        files ?? DeviceFileExchangeProvider(),
+        permanent: true);
+    Get.put(
+      BackupService(database: database, settings: settings, files: fileExchange),
+      permanent: true,
+    );
   }
 }

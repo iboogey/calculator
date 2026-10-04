@@ -26,6 +26,12 @@ class SettingsService extends GetxService {
     _database.notifyChanged();
   }
 
+  /// Re-reads settings changed directly in the database, then announces it.
+  Future<void> reload() async {
+    settings.value = await _repository.load();
+    _database.notifyChanged();
+  }
+
   Currency get currency => Currencies.byCode(settings.value.currencyCode);
 
   Period currentPeriod([DateTime? now]) => Period.containing(

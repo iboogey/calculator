@@ -5,15 +5,18 @@ Arabic (RTL) interface, no accounts, no internet: all data stays on the device i
 
 ## Features
 - Add, edit and delete income and expenses with a fast keypad and category grid
-- Home: "Remaining from salary" for the current financial month, carry-over from earlier months,
-  a warning when a budget is nearly used up, and one-tap favorites
+- Home: "Remaining from salary" for the current financial month (with carry-over), total savings,
+  everything you have, a budget warning, the month-end savings question and one-tap favorites
 - Transactions grouped by day, swipe to delete with Undo, browse previous months
+- Reports: spending by category (donut) and the last 6 months compared
 - Budgets per category with progress bars and alerts at 80 % and 100 %
-- Fixed monthly income and expenses (rent, internet, salary) added automatically
+- Savings: General Savings plus goals with targets, add/withdraw, "save X a month to reach it",
+  a month-end split of what is left, and fixed monthly savings
+- Fixed monthly income, expenses and savings (rent, salary, …) added automatically
 - Daily reminder notification (default 21:00), all scheduled on the device
-- Settings: month start day, currency, reminder, fixed costs and favorites
+- Backup to a JSON file (shared wherever you choose) and restore from it
+- Settings: month start day, currency, reminder, fixed costs, favorites, backup
 
-Planned: reports and charts, savings goals, month-end savings prompt, backup and restore.
 See [the design spec](docs/superpowers/specs/2026-10-01-expense-tracker-design.md).
 
 ## Architecture — GetX Pattern
@@ -26,14 +29,17 @@ lib/app/
     views/        GetView: layout only, rebuilt by Obx
     widgets/      widgets used only by this screen
   services/       GetxService singletons: database, settings, notifications,
-                  budget alerts, startup (recurring catch-up on start/resume), messages
+                  budget alerts, startup (recurring catch-up on start/resume),
+                  backup, messages
   data/
     models/       plain data classes with toMap / fromMap
-    providers/    data sources: sqflite database (schema, seed, migrations)
-                  and local notifications (behind an interface, faked in tests)
+    providers/    data sources: sqflite database (schema, seed, migrations),
+                  local notifications and file sharing/picking
+                  (behind interfaces, faked in tests)
     repositories/ the only code that reads or writes data
   core/
-    logic/        pure Dart rules (periods, balance, budgets, recurring dates) — fully unit-tested
+    logic/        pure Dart rules (periods, balance, budgets, recurring dates,
+                  goal projection, reports, month-end) — fully unit-tested
     utils/        money parsing/formatting, dates, currencies
     theme/        colors, theme, category icons
   widgets/        widgets shared by several screens

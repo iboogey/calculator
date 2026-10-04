@@ -3,6 +3,7 @@ import 'package:sqflite/sqflite.dart';
 
 import '../../../core/logic/balance_calculator.dart';
 import '../../../core/logic/budget_status.dart';
+import '../../../core/logic/month_end_check.dart';
 import '../../../core/logic/period.dart';
 import '../../../core/utils/currencies.dart';
 import '../../../core/utils/date_utils.dart';
@@ -50,6 +51,9 @@ class HomeController extends GetxController {
   /// 80 % or more.
   final urgentBudget = Rxn<BudgetStatus>();
 
+  /// Last period's leftover, while the month-end question is unanswered.
+  final monthEndOffer = RxnInt();
+
   late final Worker _reloadOnChange;
 
   Currency get currency => settings.currency;
@@ -85,6 +89,12 @@ class HomeController extends GetxController {
       categoriesById: byId,
       transactions: all,
     ));
+    monthEndOffer.value = MonthEndCheck.leftoverToOffer(
+      current: current,
+      lastPromptedKey: settings.settings.value.lastMonthEndPromptPeriod,
+      transactions: all,
+      movements: movements,
+    );
   }
 
   /// Adds today's transaction from [favorite]. Returns it (for Undo), or null
@@ -124,6 +134,21 @@ class HomeController extends GetxController {
   void openBudgets() => Get.offAllNamed(Routes.budgets);
 
   void openFavorites() => Get.toNamed(Routes.templates);
+
+  /// Answers "not now" for last period's leftover; it is not offered again.
+  Future<void> skipMonthEnd() async {
+    final previous = settings.currentPeriod(_clock()).previous;
+    try {
+      await settings.update(settings.settings.value
+          .copyWith(lastMonthEndPromptPeriod: previous.key));
+    } on DatabaseException {
+      Get.find<MessageService>().showError('ما قدرنا نحفظ اختيارك');
+    }
+  }
+
+  void openMonthEnd() => Get.toNamed(Routes.monthEnd);
+
+  void openSavings() => Get.toNamed(Routes.savings);
 
   @override
   void onClose() {

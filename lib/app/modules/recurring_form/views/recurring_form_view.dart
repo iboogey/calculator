@@ -3,7 +3,7 @@ import 'package:get/get.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../widgets/category_grid.dart';
-import '../../../widgets/kind_toggle.dart';
+import '../../../data/models/enums.dart';
 import '../controllers/recurring_form_controller.dart';
 
 class RecurringFormView extends GetView<RecurringFormController> {
@@ -29,8 +29,19 @@ class RecurringFormView extends GetView<RecurringFormController> {
         child: ListView(
           padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
           children: [
-            Obx(() => KindToggle(
-                value: controller.kind.value, onChanged: controller.setKind)),
+            Obx(() => SizedBox(
+                  width: double.infinity,
+                  child: SegmentedButton<RecurringKind>(
+                    showSelectedIcon: false,
+                    segments: const [
+                      ButtonSegment(value: RecurringKind.expense, label: Text('مصروف')),
+                      ButtonSegment(value: RecurringKind.income, label: Text('دخل')),
+                      ButtonSegment(value: RecurringKind.saving, label: Text('ادخار')),
+                    ],
+                    selected: {controller.kind.value},
+                    onSelectionChanged: (s) => controller.setKind(s.first),
+                  ),
+                )),
             const SizedBox(height: 16),
             TextField(
               controller: controller.labelController,
@@ -67,14 +78,28 @@ class RecurringFormView extends GetView<RecurringFormController> {
               ],
             ),
             const SizedBox(height: 12),
-            const Text('التصنيف',
-                style: TextStyle(color: AppColors.muted, fontSize: 13)),
+            Obx(() => Text(
+                controller.kind.value == RecurringKind.saving ? 'الهدف' : 'التصنيف',
+                style: const TextStyle(color: AppColors.muted, fontSize: 13))),
             const SizedBox(height: 8),
-            Obx(() => CategoryGrid(
-                  categories: controller.visibleCategories,
-                  selectedId: controller.categoryId.value,
-                  onSelected: controller.selectCategory,
-                )),
+            Obx(() => controller.kind.value == RecurringKind.saving
+                ? Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      for (final goal in controller.goals)
+                        ChoiceChip(
+                          label: Text(goal.name),
+                          selected: controller.goalId.value == goal.id,
+                          onSelected: (_) => controller.selectGoal(goal.id!),
+                        ),
+                    ],
+                  )
+                : CategoryGrid(
+                    categories: controller.visibleCategories,
+                    selectedId: controller.categoryId.value,
+                    onSelected: controller.selectCategory,
+                  )),
             const SizedBox(height: 20),
             Obx(() => FilledButton(
                   onPressed: controller.canSave ? _save : null,

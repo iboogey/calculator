@@ -39,6 +39,8 @@ class AppSettings {
     int? currencyDecimals,
     bool? reminderEnabled,
     int? reminderMinutes,
+    String? lastMonthEndPromptPeriod,
+    DateTime? lastBackupAt,
   }) =>
       AppSettings(
         periodStartDay: periodStartDay ?? this.periodStartDay,
@@ -46,8 +48,9 @@ class AppSettings {
         currencyDecimals: currencyDecimals ?? this.currencyDecimals,
         reminderEnabled: reminderEnabled ?? this.reminderEnabled,
         reminderMinutes: reminderMinutes ?? this.reminderMinutes,
-        lastMonthEndPromptPeriod: lastMonthEndPromptPeriod,
-        lastBackupAt: lastBackupAt,
+        lastMonthEndPromptPeriod:
+            lastMonthEndPromptPeriod ?? this.lastMonthEndPromptPeriod,
+        lastBackupAt: lastBackupAt ?? this.lastBackupAt,
       );
 
   Map<String, Object?> toMap() => {

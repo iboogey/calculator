@@ -153,6 +153,36 @@ void main() {
     final budgets = await tester.runAsync(Get.find<BudgetRepository>().getAll);
     expect(budgets!.single.limitAmount, 10000);
   });
+
+  testWidgets('the reports tab shows spending by category', (tester) async {
+    await boot(tester);
+    await tester.runAsync(
+        () => Get.find<TransactionRepository>().add(expense(5000, DateTime.now())));
+    await tester.tap(find.text('التقارير'));
+    await idle(tester);
+    expect(find.text('أكل'), findsOneWidget);
+    expect(find.text('100%'), findsOneWidget);
+  });
+
+  testWidgets('Home opens savings from the savings total', (tester) async {
+    await boot(tester);
+    await tester.tap(find.text('مجموع المدخرات'));
+    await idle(tester);
+    expect(find.text('ادخار عام'), findsOneWidget);
+    expect(find.text('هدف جديد'), findsOneWidget);
+  });
+
+  testWidgets('Home offers last month\'s leftover', (tester) async {
+    await boot(tester);
+    final now = DateTime.now();
+    await tester.runAsync(() => Get.find<TransactionRepository>()
+        .add(income(100000, DateTime(now.year, now.month - 1, 1))));
+    await idle(tester);
+    expect(find.textContaining('خلص الشهر الماضي'), findsOneWidget);
+    await tester.tap(find.text('مش هلأ'));
+    await idle(tester);
+    expect(find.textContaining('خلص الشهر الماضي'), findsNothing);
+  });
 }
 
 /// Like [idle] but short enough to keep a SnackBar on screen.

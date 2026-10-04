@@ -9,6 +9,7 @@ import '../../../widgets/section_header.dart';
 import '../controllers/home_controller.dart';
 import '../widgets/balance_card.dart';
 import '../widgets/budget_alert_banner.dart';
+import '../widgets/month_end_banner.dart';
 import '../widgets/quick_templates_row.dart';
 import '../widgets/recent_transactions.dart';
 
@@ -35,7 +36,20 @@ class HomeView extends GetView<HomeController> {
               Text(period.label,
                   style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700)),
               const SizedBox(height: 16),
-              BalanceCard(summary: summary, currency: controller.currency),
+              BalanceCard(
+                summary: summary,
+                currency: controller.currency,
+                onSavingsTap: controller.openSavings,
+              ),
+              if (controller.monthEndOffer.value case final offer?) ...[
+                const SizedBox(height: 12),
+                MonthEndBanner(
+                  amount: offer,
+                  currency: controller.currency,
+                  onSplit: controller.openMonthEnd,
+                  onSkip: controller.skipMonthEnd,
+                ),
+              ],
               if (urgent != null) ...[
                 const SizedBox(height: 12),
                 BudgetAlertBanner(

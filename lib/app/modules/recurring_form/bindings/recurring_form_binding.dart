@@ -9,6 +9,7 @@ class RecurringFormBinding extends Bindings {
     Get.lazyPut(() => RecurringFormController(
           recurring: Get.find(),
           categories: Get.find(),
+          savings: Get.find(),
           settings: Get.find(),
           editId: args is int ? args : null,
         ));
