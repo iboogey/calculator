@@ -110,11 +110,69 @@ class SettingsView extends GetView<SettingsController> {
                 ],
               ),
             ),
+            const _SectionTitle('النسخ الاحتياطي'),
+            Card(
+              child: Column(
+                children: [
+                  ListTile(
+                    leading: const Icon(Icons.backup_outlined),
+                    title: const Text('نسخة احتياطية الآن'),
+                    subtitle: Text(
+                      controller.lastBackupLabel,
+                      style: TextStyle(
+                          color: controller.backupOverdue
+                              ? AppColors.warning
+                              : AppColors.muted),
+                    ),
+                    onTap: controller.exportBackup,
+                  ),
+                  const Divider(indent: 16, endIndent: 16),
+                  ListTile(
+                    leading: const Icon(Icons.restore),
+                    title: const Text('استرجاع من ملف'),
+                    onTap: () => _restore(context),
+                  ),
+                ],
+              ),
+            ),
           ],
         );
       }),
       bottomNavigationBar: const AppBottomNav(current: Routes.settings),
     );
+  }
+
+  Future<void> _restore(BuildContext context) async {
+    final summary = await controller.pickBackup();
+    if (summary == null || !context.mounted) return;
+    final when = summary.exportedAt;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('استرجاع النسخة؟'),
+        content: Text(
+          'رح تنمسح بياناتك الحالية وتنحط مكانها نسخة '
+          '${when.day}/${when.month}/${when.year}: '
+          '${summary.transactionCount} عملية و ${summary.goalCount} أهداف.',
+        ),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('إلغاء')),
+          FilledButton(
+            style: FilledButton.styleFrom(minimumSize: const Size(0, 40)),
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('استرجاع'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    final restored = await controller.restore(summary);
+    if (restored && context.mounted) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('انسترجعت النسخة')));
+    }
   }
 
   Future<void> _pickTime(BuildContext context, int minutes) async {

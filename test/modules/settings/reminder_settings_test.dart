@@ -12,7 +12,7 @@ void main() {
   setUp(() async => fake = await setUpTestServices());
 
   SettingsController open() => Get.put(
-      SettingsController(settingsService: Get.find(), notifications: Get.find()));
+      SettingsController(settingsService: Get.find(), notifications: Get.find(), backup: Get.find(), files: Get.find()));
 
   test('shows the reminder time as HH:MM', () {
     expect(open().reminderLabel, '21:00');
