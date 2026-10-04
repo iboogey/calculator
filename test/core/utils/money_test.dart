@@ -77,4 +77,12 @@ void main() {
     expect(Money.format(-4, decimals: 2), '0.00');
     expect(Money.format(4, decimals: 2, showPlus: true), '0.00');
   });
+
+  test('parse accepts Arabic-Indic digits and separators from an Arabic keyboard', () {
+    expect(Money.parse('١٠', decimals: 3), 10000);
+    expect(Money.parse('١٢٫٥', decimals: 3), 12500);
+    expect(Money.parse('١٬٢٥٠', decimals: 3), 1250000);
+    expect(Money.parse('۱۵', decimals: 3), 15000);
+    expect(Money.parse('٠', decimals: 3), isNull);
+  });
 }

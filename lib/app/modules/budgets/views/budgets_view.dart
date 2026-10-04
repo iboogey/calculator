@@ -3,7 +3,6 @@ import 'package:get/get.dart';
 
 import '../../../core/logic/budget_status.dart';
 import '../../../core/theme/app_colors.dart';
-import '../../../core/utils/money.dart';
 import '../../../data/models/transaction_category.dart';
 import '../../../routes/app_routes.dart';
 import '../../../widgets/app_bottom_nav.dart';
@@ -11,6 +10,7 @@ import '../../../widgets/category_avatar.dart';
 import '../../../widgets/empty_state.dart';
 import '../../../widgets/section_header.dart';
 import '../controllers/budgets_controller.dart';
+import '../widgets/budget_limit_dialog.dart';
 import '../widgets/budget_progress_tile.dart';
 import '../widgets/recurring_summary.dart';
 
@@ -109,46 +109,25 @@ class BudgetsView extends GetView<BudgetsController> {
     TransactionCategory category,
     BudgetStatus? current,
   ) async {
-    final input = TextEditingController(
-        text: current == null ? '' : Money.toEditable(current.limit));
-    final action = await showDialog<String>(
+    final result = await showDialog<BudgetLimitResult>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text('ميزانية ${category.name} الشهرية'),
-        content: TextField(
-          controller: input,
-          autofocus: true,
-          keyboardType: const TextInputType.numberWithOptions(decimal: true),
-          decoration: InputDecoration(
-            hintText: 'المبلغ',
-            suffixText: controller.currency.symbol,
-          ),
-        ),
-        actions: [
-          if (current != null)
-            TextButton(
-              onPressed: () => Navigator.pop(context, 'remove'),
-              child: const Text('حذف الميزانية'),
-            ),
-          TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('إلغاء')),
-          FilledButton(
-              onPressed: () => Navigator.pop(context, 'save'),
-              child: const Text('حفظ')),
-        ],
+      builder: (context) => BudgetLimitDialog(
+        categoryName: category.name,
+        currency: controller.currency,
+        currentLimit: current?.limit,
       ),
     );
-    final text = input.text;
-    input.dispose();
-    if (action == 'remove') {
-      await controller.removeLimit(category.id!);
-    } else if (action == 'save') {
-      final saved = await controller.setLimit(category.id!, text);
-      if (!saved && context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('اكتب مبلغ أكبر من صفر')));
-      }
+    switch (result) {
+      case RemoveBudgetLimit():
+        await controller.removeLimit(category.id!);
+      case SaveBudgetLimit(:final text):
+        final saved = await controller.setLimit(category.id!, text);
+        if (!saved && context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('اكتب مبلغ أكبر من صفر')));
+        }
+      case null:
+        break;
     }
   }
 }

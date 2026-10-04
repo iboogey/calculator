@@ -134,6 +134,25 @@ void main() {
     expect(tester.getBottomLeft(find.byType(TextField)).dy, lessThanOrEqualTo(keypadTop));
     expect(tester.getBottomLeft(find.byType(CheckboxListTile)).dy, lessThanOrEqualTo(keypadTop));
   });
+
+  testWidgets('adding a budget from its dialog closes cleanly', (tester) async {
+    await boot(tester);
+    await tester.tap(find.text('الميزانية'));
+    await idle(tester);
+    await tester.tap(find.text('إضافة ميزانية'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('أكل'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField), '10');
+    await tester.tap(find.text('حفظ'));
+    await tester.pump();
+    await tester.runAsync(settle);
+    await tester.pumpAndSettle();
+
+    expect(tester.takeException(), isNull);
+    final budgets = await tester.runAsync(Get.find<BudgetRepository>().getAll);
+    expect(budgets!.single.limitAmount, 10000);
+  });
 }
 
 /// Like [idle] but short enough to keep a SnackBar on screen.
