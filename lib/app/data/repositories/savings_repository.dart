@@ -18,6 +18,11 @@ class GoalNotEmptyException implements Exception {
   final int balance;
 }
 
+/// A goal that a fixed monthly saving still pays into cannot be removed.
+class GoalHasRecurringException implements Exception {
+  const GoalHasRecurringException();
+}
+
 class SavingsRepository {
   SavingsRepository(this._database);
 
@@ -67,7 +72,8 @@ class SavingsRepository {
   }
 
   /// Removes an empty goal: deleted when it has no history, archived when it
-  /// has (returns true). General Savings is never removed.
+  /// has (returns true). General Savings is never removed, nor a goal that a
+  /// fixed monthly saving still points at.
   Future<bool> removeGoal(SavingsGoal goal) async {
     if (goal.isGeneral) {
       throw ArgumentError('General Savings cannot be removed');
@@ -79,6 +85,10 @@ class SavingsRepository {
               args)) ??
           0;
       if (balance != 0) throw GoalNotEmptyException(balance);
+      final rules = Sqflite.firstIntValue(await txn.rawQuery(
+              'SELECT COUNT(*) FROM recurring_rules WHERE goal_id = ?', args)) ??
+          0;
+      if (rules > 0) throw const GoalHasRecurringException();
       final used = Sqflite.firstIntValue(await txn.rawQuery(
               'SELECT COUNT(*) FROM $_movements WHERE goal_id = ?', args)) ??
           0;
@@ -95,9 +105,19 @@ class SavingsRepository {
   }
 
   /// Saves [movements] in one transaction. A withdrawal larger than its goal
-  /// holds throws [InsufficientSavingsException] and nothing is saved.
-  Future<void> addMovements(List<SavingsMovement> movements) async {
+  /// holds throws [InsufficientSavingsException] and nothing is saved. With
+  /// [answeredPeriodKey], the month-end question for that period is marked
+  /// answered in the same transaction.
+  Future<void> addMovements(
+    List<SavingsMovement> movements, {
+    String? answeredPeriodKey,
+  }) async {
     await _database.db.transaction((txn) async {
+      if (answeredPeriodKey != null) {
+        await txn.update(
+            'settings', {'last_month_end_prompt_period': answeredPeriodKey},
+            where: 'id = ?', whereArgs: [1]);
+      }
       for (final movement in movements) {
         if (movement.amount < 0) {
           final held = Sqflite.firstIntValue(await txn.rawQuery(

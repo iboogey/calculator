@@ -28,6 +28,7 @@ class GoalFormController extends GetxController {
   final _target = ''.obs;
   final targetDate = Rxn<DateTime>();
   final isEditing = false.obs;
+  final isSaving = false.obs;
 
   SavingsGoal? _editing;
   late final Future<void> ready;
@@ -37,6 +38,7 @@ class GoalFormController extends GetxController {
   int? get _targetAmount => Money.parse(_target.value, decimals: 3);
 
   bool get canSave =>
+      !isSaving.value &&
       _name.value.trim().isNotEmpty &&
       (_target.value.trim().isEmpty || _targetAmount != null);
 
@@ -74,6 +76,7 @@ class GoalFormController extends GetxController {
       createdAt: _editing?.createdAt ??
           DateTime.fromMillisecondsSinceEpoch(DateTime.now().millisecondsSinceEpoch),
     );
+    isSaving.value = true;
     try {
       if (_editing == null) {
         await savings.addGoal(goal);
@@ -84,6 +87,8 @@ class GoalFormController extends GetxController {
     } on DatabaseException {
       Get.find<MessageService>().showError('ما قدرنا نحفظ الهدف');
       return false;
+    } finally {
+      isSaving.value = false;
     }
   }
 
@@ -97,6 +102,10 @@ class GoalFormController extends GetxController {
     } on GoalNotEmptyException catch (e) {
       Get.find<MessageService>().showError(
           'اسحب المبلغ من الهدف أول (فيه ${Money.format(e.balance, decimals: currency.decimals)})');
+      return false;
+    } on GoalHasRecurringException {
+      Get.find<MessageService>().showError(
+          'هالهدف عليه ادخار شهري ثابت. احذفه من المصاريف الثابتة أول');
       return false;
     } on DatabaseException {
       Get.find<MessageService>().showError('ما قدرنا نحذف الهدف');

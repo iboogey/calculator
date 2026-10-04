@@ -100,16 +100,22 @@ class MonthEndController extends GetxController {
             createdAt: now,
           ),
     ];
+    final previous = settings.currentPeriod(_clock()).previous;
     try {
-      await savings.addMovements(movements);
-      await _markAnswered();
-      return true;
+      await savings.addMovements(movements, answeredPeriodKey: previous.key);
     } on DatabaseException {
       Get.find<MessageService>().showError('ما قدرنا نحفظ التوزيع');
+      isSaving.value = false;
       return false;
+    }
+    try {
+      await settings.reload();
+    } on DatabaseException {
+      // Saved already; the next change refreshes the settings anyway.
     } finally {
       isSaving.value = false;
     }
+    return true;
   }
 
   Future<void> skip() async {

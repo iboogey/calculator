@@ -7,7 +7,8 @@ import 'package:share_plus/share_plus.dart';
 /// Moving files in and out of the app. An interface so tests can use a fake.
 abstract class FileExchangeProvider {
   /// Opens the system share sheet (Files, Drive, email…) for [path].
-  Future<void> shareFile(String path, {required String subject});
+  /// Returns false when the user closed it without sharing.
+  Future<bool> shareFile(String path, {required String subject});
 
   /// Lets the user pick a JSON file; returns its text, or null if cancelled.
   Future<String?> pickJsonText();
@@ -20,11 +21,12 @@ abstract class FileExchangeProvider {
 /// The app itself never uploads anything.
 class DeviceFileExchangeProvider implements FileExchangeProvider {
   @override
-  Future<void> shareFile(String path, {required String subject}) async {
-    await SharePlus.instance.share(ShareParams(
+  Future<bool> shareFile(String path, {required String subject}) async {
+    final result = await SharePlus.instance.share(ShareParams(
       files: [XFile(path, mimeType: 'application/json')],
       subject: subject,
     ));
+    return result.status != ShareResultStatus.dismissed;
   }
 
   @override

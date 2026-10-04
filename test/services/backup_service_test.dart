@@ -95,4 +95,24 @@ void main() {
     expect(Get.find<SettingsService>().settings.value.lastBackupAt,
         DateTime(2026, 10, 4, 9));
   });
+
+  test('a backup with wrong value types is rejected before anything is replaced', () async {
+    await seed();
+    final good = jsonDecode(await backup().exportJson(DateTime(2026, 10, 4))) as Map<String, dynamic>;
+    final badAmount = jsonDecode(jsonEncode(good)) as Map<String, dynamic>;
+    ((badAmount['tables'] as Map)['transactions'] as List).first['amount'] = 'abc';
+    expect(() => backup().parse(jsonEncode(badAmount)), throwsA(isA<BackupFormatException>()));
+
+    final badDate = jsonDecode(jsonEncode(good)) as Map<String, dynamic>;
+    ((badDate['tables'] as Map)['transactions'] as List).first['date'] = 5;
+    expect(() => backup().parse(jsonEncode(badDate)), throwsA(isA<BackupFormatException>()));
+  });
+
+  test('dismissing the share sheet does not count as a backup', () async {
+    final fake = Get.find<FileExchangeProvider>() as FakeFileExchangeProvider;
+    fake.shareSucceeds = false;
+    expect(await backup().shareBackup(DateTime(2026, 10, 4)), isFalse);
+    expect(Get.find<SettingsService>().settings.value.lastBackupAt, isNull);
+  });
+
 }

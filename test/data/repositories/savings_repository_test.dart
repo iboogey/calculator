@@ -80,4 +80,29 @@ void main() {
     final general = (await repo.getGoals()).first;
     await expectLater(repo.removeGoal(general), throwsArgumentError);
   });
+
+  test('a month-end split and its answer are saved together, or not at all', () async {
+    await database.db.execute('DROP TABLE settings');
+    await expectLater(
+      repo.addMovements([saving(1000, DateTime(2026, 10, 1))], answeredPeriodKey: '2026-09'),
+      throwsA(anything),
+    );
+    expect(await repo.getAllMovements(), isEmpty);
+  });
+
+  test('a goal with a fixed monthly saving cannot be removed', () async {
+    final goal = await laptop();
+    await database.db.insert('recurring_rules', {
+      'label': 'لابتوب',
+      'kind': 'saving',
+      'amount': 50000,
+      'goal_id': goal.id,
+      'day_of_month': 1,
+      'start_date': '2026-11-01',
+      'is_active': 0,
+    });
+    await expectLater(repo.removeGoal(goal), throwsA(isA<GoalHasRecurringException>()));
+    expect(await repo.getGoal(goal.id!), isNotNull);
+  });
+
 }

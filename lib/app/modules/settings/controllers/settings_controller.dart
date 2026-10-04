@@ -74,11 +74,17 @@ class SettingsController extends GetxController {
     return last == null || _clock().difference(last).inDays > backupReminderDays;
   }
 
+  bool _exporting = false;
+
   Future<void> exportBackup() async {
+    if (_exporting) return;
+    _exporting = true;
     try {
       await backup.shareBackup(_clock());
     } catch (_) {
       Get.find<MessageService>().showError('ما قدرنا نعمل النسخة الاحتياطية');
+    } finally {
+      _exporting = false;
     }
   }
 

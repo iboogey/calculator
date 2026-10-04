@@ -7,6 +7,14 @@ import 'package:path/path.dart' as p;
 import '../core/utils/date_utils.dart';
 import '../data/providers/app_database.dart';
 import '../data/providers/file_exchange_provider.dart';
+import '../data/models/app_settings.dart';
+import '../data/models/budget.dart';
+import '../data/models/quick_template.dart';
+import '../data/models/recurring_rule.dart';
+import '../data/models/savings_goal.dart';
+import '../data/models/savings_movement.dart';
+import '../data/models/transaction_category.dart';
+import '../data/models/transaction_record.dart';
 import 'database_service.dart';
 import 'settings_service.dart';
 
@@ -74,14 +82,19 @@ class BackupService extends GetxService {
     });
   }
 
-  /// Writes today's backup file, opens the share sheet and records the time.
-  Future<void> shareBackup(DateTime now) async {
+  /// Writes today's backup file and opens the share sheet. The time is
+  /// recorded only when the file was actually shared; returns whether it was.
+  Future<bool> shareBackup(DateTime now) async {
     final folder = await files.tempDirectory();
     final path =
         p.join(folder, 'masarifi-backup-${DateKeys.fromDate(now)}.json');
     await File(path).writeAsString(await exportJson(now));
-    await files.shareFile(path, subject: 'نسخة احتياطية — مصاريفي');
-    await settings.update(settings.settings.value.copyWith(lastBackupAt: now));
+    final shared =
+        await files.shareFile(path, subject: 'نسخة احتياطية — مصاريفي');
+    if (shared) {
+      await settings.update(settings.settings.value.copyWith(lastBackupAt: now));
+    }
+    return shared;
   }
 
   /// Checks [text] and returns what it contains, or throws
@@ -119,6 +132,7 @@ class BackupService extends GetxService {
     if (parsed['settings']!.length != 1) {
       throw const BackupFormatException(_notABackup);
     }
+    _checkTypes(parsed);
     final exportedAt = decoded['exportedAt'];
     return BackupSummary(
       exportedAt: (exportedAt is String ? DateTime.tryParse(exportedAt) : null) ??
@@ -127,6 +141,35 @@ class BackupService extends GetxService {
       goalCount: parsed['savings_goals']!.length,
       tables: parsed,
     );
+  }
+
+  /// Reads every row the way the app will, so a file with a wrong value type
+  /// is refused here instead of breaking the app after the restore.
+  static void _checkTypes(Map<String, List<Map<String, Object?>>> tables) {
+    final readers = <String, void Function(Map<String, Object?>)>{
+      'categories': TransactionCategory.fromMap,
+      'savings_goals': SavingsGoal.fromMap,
+      'recurring_rules': RecurringRule.fromMap,
+      'transactions': TransactionRecord.fromMap,
+      'budgets': Budget.fromMap,
+      'savings_movements': SavingsMovement.fromMap,
+      'quick_templates': QuickTemplate.fromMap,
+      'settings': AppSettings.fromMap,
+      'budget_alerts_sent': (row) {
+        if (row['category_id'] is! int ||
+            row['period_key'] is! String ||
+            row['threshold'] is! int) {
+          throw const FormatException('budget_alerts_sent');
+        }
+      },
+    };
+    try {
+      for (final MapEntry(key: table, value: rows) in tables.entries) {
+        rows.forEach(readers[table]!);
+      }
+    } catch (_) {
+      throw const BackupFormatException(_notABackup);
+    }
   }
 
   /// Replaces all data with [backup] in one transaction: if anything fails,

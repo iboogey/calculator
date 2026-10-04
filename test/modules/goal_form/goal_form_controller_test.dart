@@ -1,3 +1,6 @@
+import 'package:calculator/app/data/models/enums.dart';
+import 'package:calculator/app/data/models/recurring_rule.dart';
+import 'package:calculator/app/data/repositories/recurring_repository.dart';
 import 'package:calculator/app/data/repositories/savings_repository.dart';
 import 'package:calculator/app/modules/goal_form/controllers/goal_form_controller.dart';
 import 'package:calculator/app/services/message_service.dart';
@@ -70,4 +73,33 @@ void main() {
     expect(await edit.remove(), isFalse);
     expect(Get.find<MessageService>().lastMessage.value, contains('اسحب'));
   });
+
+  test('a double tap on Save creates one goal', () async {
+    final c = await open();
+    c.nameController.text = 'سفرة';
+    final results = await Future.wait([c.save(), c.save()]);
+    expect(results, [true, false]);
+    expect((await Get.find<SavingsRepository>().getGoals()).where((g) => g.name == 'سفرة'), hasLength(1));
+  });
+
+  test('a goal with a fixed monthly saving explains why it cannot be removed', () async {
+    final c = await open();
+    c.nameController.text = 'سفرة';
+    await c.save();
+    final goal = (await Get.find<SavingsRepository>().getGoals()).last;
+    await Get.find<RecurringRepository>().add(RecurringRule(
+      label: 'سفرة',
+      kind: RecurringKind.saving,
+      amount: 10000,
+      goalId: goal.id,
+      dayOfMonth: 28,
+      startDate: DateTime(2026, 12, 1),
+    ));
+    Get.delete<GoalFormController>();
+
+    final edit = await open(editId: goal.id);
+    expect(await edit.remove(), isFalse);
+    expect(Get.find<MessageService>().lastMessage.value, contains('ادخار شهري'));
+  });
+
 }

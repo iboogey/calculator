@@ -6,11 +6,16 @@ import 'package:calculator/app/data/providers/file_exchange_provider.dart';
 class FakeFileExchangeProvider implements FileExchangeProvider {
   final shared = <String>[];
   String? textToPick;
+
+  /// False simulates the user closing the share sheet.
+  bool shareSucceeds = true;
   final _dir = Directory.systemTemp.createTempSync('masarifi_test');
 
   @override
-  Future<void> shareFile(String path, {required String subject}) async =>
-      shared.add(path);
+  Future<bool> shareFile(String path, {required String subject}) async {
+    shared.add(path);
+    return shareSucceeds;
+  }
 
   @override
   Future<String?> pickJsonText() async => textToPick;
