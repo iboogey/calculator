@@ -1,5 +1,6 @@
 import 'package:calculator/app/data/models/enums.dart';
 import 'package:calculator/app/data/repositories/recurring_repository.dart';
+import 'package:calculator/app/data/repositories/savings_repository.dart';
 import 'package:calculator/app/data/repositories/transaction_repository.dart';
 import 'package:calculator/app/modules/recurring_form/controllers/recurring_form_controller.dart';
 import 'package:calculator/app/services/database_service.dart';
@@ -17,6 +18,7 @@ void main() {
     final c = Get.put(RecurringFormController(
       recurring: Get.find(),
       categories: Get.find(),
+      savings: Get.find(),
       settings: Get.find(),
       editId: editId,
       clock: () => today,
@@ -27,7 +29,7 @@ void main() {
 
   test('defaults to an expense due on today\'s day of the month', () async {
     final c = await open();
-    expect(c.kind.value, TransactionKind.expense);
+    expect(c.kind.value, RecurringKind.expense);
     expect(c.dayOfMonth.value, 4);
     expect(c.canSave, isFalse);
   });
@@ -80,7 +82,7 @@ void main() {
   test('switching to income clears the category', () async {
     final c = await open();
     c.selectCategory(3);
-    c.setKind(TransactionKind.income);
+    c.setKind(RecurringKind.income);
     expect(c.categoryId.value, isNull);
     expect(c.visibleCategories.map((x) => x.name), ['راتب', 'دخل آخر']);
   });
@@ -96,6 +98,7 @@ void main() {
     final edit = Get.put(RecurringFormController(
       recurring: Get.find(),
       categories: Get.find(),
+      savings: Get.find(),
       settings: Get.find(),
       editId: id,
       clock: () => DateTime(2026, 10, 25),
@@ -113,6 +116,7 @@ void main() {
     final c = Get.put(RecurringFormController(
       recurring: failing,
       categories: Get.find(),
+      savings: Get.find(),
       settings: Get.find(),
       clock: () => today,
     ));
@@ -121,6 +125,27 @@ void main() {
     c.selectCategory(3);
     expect(await c.save(), isTrue);
     expect(failing.rulesBeforeCatchUp, 1);
+  });
+
+  test('a monthly saving goes to the chosen goal as a recurring movement', () async {
+    final c = await open();
+    c.setKind(RecurringKind.saving);
+    expect(c.visibleCategories, isEmpty);
+    expect(c.goals.first.name, 'ادخار عام');
+    c.amountText.value = '50';
+    expect(c.canSave, isFalse);
+    c.selectGoal(1);
+    expect(c.canSave, isTrue);
+    expect(await c.save(), isTrue);
+
+    final rule = (await Get.find<RecurringRepository>().getAll()).single;
+    expect(rule.kind, RecurringKind.saving);
+    expect(rule.goalId, 1);
+    expect(rule.categoryId, isNull);
+    expect(rule.label, 'ادخار عام');
+    final movement = (await Get.find<SavingsRepository>().getAllMovements()).single;
+    expect(movement.amount, 50000);
+    expect(movement.source, SavingsSource.recurring);
   });
 }
 
