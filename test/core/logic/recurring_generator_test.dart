@@ -88,4 +88,27 @@ void main() {
       );
     });
   });
+
+  group('withDay', () {
+    test('moving later in the month does not repeat this month', () {
+      final moved = RecurringGenerator.withDay(
+          rule(day: 5, start: DateTime(2026, 1, 1), last: DateTime(2026, 10, 5)), 20);
+      expect(moved.dayOfMonth, 20);
+      expect(RecurringGenerator.dueDates(moved, DateTime(2026, 10, 25)), isEmpty);
+      expect(RecurringGenerator.dueDates(moved, DateTime(2026, 11, 20)), [DateTime(2026, 11, 20)]);
+    });
+
+    test('moving earlier waits for next month', () {
+      final moved = RecurringGenerator.withDay(
+          rule(day: 20, start: DateTime(2026, 1, 1), last: DateTime(2026, 10, 20)), 5);
+      expect(RecurringGenerator.dueDates(moved, DateTime(2026, 10, 31)), isEmpty);
+      expect(RecurringGenerator.dueDates(moved, DateTime(2026, 11, 5)), [DateTime(2026, 11, 5)]);
+    });
+
+    test('a rule that never ran only changes its day', () {
+      final moved = RecurringGenerator.withDay(rule(day: 5, start: DateTime(2026, 12, 1)), 20);
+      expect(moved.dayOfMonth, 20);
+      expect(moved.lastGeneratedDate, isNull);
+    });
+  });
 }

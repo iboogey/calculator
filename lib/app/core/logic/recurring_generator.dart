@@ -25,6 +25,21 @@ abstract final class RecurringGenerator {
     return _onOrAfter(candidate.isAfter(now) ? candidate : now, rule.dayOfMonth);
   }
 
+  /// [rule] moved to [day]. When the rule already ran this month, this
+  /// month counts as done for the new day too, so moving the day never
+  /// creates a second entry in the same month.
+  static RecurringRule withDay(RecurringRule rule, int day) {
+    final last = rule.lastGeneratedDate;
+    if (last == null || day == rule.dayOfMonth) {
+      return rule.copyWith(dayOfMonth: day);
+    }
+    final sameMonth = DateTime(last.year, last.month, day);
+    return rule.copyWith(
+      dayOfMonth: day,
+      lastGeneratedDate: sameMonth.isAfter(last) ? sameMonth : last,
+    );
+  }
+
   static DateTime _firstCandidate(RecurringRule rule) {
     final last = rule.lastGeneratedDate;
     final start = DateKeys.dateOnly(rule.startDate);

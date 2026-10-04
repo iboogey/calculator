@@ -65,6 +65,7 @@ class RecurringRule {
     int? amount,
     int? categoryId,
     int? dayOfMonth,
+    DateTime? lastGeneratedDate,
     bool? isActive,
   }) =>
       RecurringRule(
@@ -76,7 +77,7 @@ class RecurringRule {
         goalId: goalId,
         dayOfMonth: dayOfMonth ?? this.dayOfMonth,
         startDate: startDate,
-        lastGeneratedDate: lastGeneratedDate,
+        lastGeneratedDate: lastGeneratedDate ?? this.lastGeneratedDate,
         isActive: isActive ?? this.isActive,
       );
 

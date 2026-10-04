@@ -4,6 +4,7 @@ import 'package:flutter/widgets.dart';
 import 'package:get/get.dart';
 import 'package:sqflite/sqflite.dart';
 
+import '../../../core/logic/recurring_generator.dart';
 import '../../../core/utils/currencies.dart';
 import '../../../core/utils/date_utils.dart';
 import '../../../core/utils/money.dart';
@@ -118,22 +119,30 @@ class RecurringFormController extends GetxController {
           startDate: DateKeys.dateOnly(_clock()),
         ));
       } else {
-        await recurring.update(editing.copyWith(
+        await recurring.update(
+            RecurringGenerator.withDay(editing, dayOfMonth.value).copyWith(
           label: label,
           kind: recurringKind,
           amount: value,
           categoryId: category,
-          dayOfMonth: dayOfMonth.value,
         ));
       }
-      await recurring.applyDue(_clock());
-      return true;
     } on DatabaseException {
       Get.find<MessageService>().showError('ما قدرنا نحفظ المصروف الثابت');
+      isSaving.value = false;
       return false;
+    }
+    // The rule is saved. Creating its due entries now is a convenience:
+    // if it fails, the next start or resume catches up.
+    try {
+      await recurring.applyDue(_clock());
+    } on DatabaseException {
+      // Ignored on purpose; reporting "not saved" here would invite a
+      // second, duplicate rule.
     } finally {
       isSaving.value = false;
     }
+    return true;
   }
 
   /// Deletes the rule; entries it already created stay.

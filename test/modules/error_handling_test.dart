@@ -21,7 +21,7 @@ void main() {
 
   test('a failed save shows a message and reports false', () async {
     final c = Get.put(TransactionFormController(
-        transactions: Get.find(), categories: Get.find(), templates: Get.find(), settings: Get.find()));
+        transactions: Get.find(), categories: Get.find(), settings: Get.find()));
     await c.ready;
     c.pressKey('5');
     c.selectCategory(foodCategoryId);

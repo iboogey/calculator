@@ -33,6 +33,10 @@ class TransactionsController extends GetxController {
   final categoriesById = <int, TransactionCategory>{}.obs;
 
   List<TransactionRecord> _items = const [];
+
+  /// True until the user moves to another period; then reloads keep showing
+  /// the period they chose.
+  bool _followsCurrent = true;
   late final Worker _reloadOnChange;
 
   Currency get currency => settings.currency;
@@ -48,7 +52,10 @@ class TransactionsController extends GetxController {
   }
 
   Future<void> load() async {
-    final current = period.value ??= settings.currentPeriod(_clock());
+    final current = _followsCurrent
+        ? settings.currentPeriod(_clock())
+        : period.value ?? settings.currentPeriod(_clock());
+    period.value = current;
     final items = await transactions.getBetween(current.start, current.end);
     final allCategories = await categories.getAll(includeArchived: true);
     categoriesById.assignAll({for (final c in allCategories) c.id!: c});
@@ -56,13 +63,13 @@ class TransactionsController extends GetxController {
     groups.assignAll(DayGroup.group(items));
   }
 
-  Future<void> previousPeriod() {
-    period.value = period.value!.previous;
-    return load();
-  }
+  Future<void> previousPeriod() => _showPeriod(period.value!.previous);
 
-  Future<void> nextPeriod() {
-    period.value = period.value!.next;
+  Future<void> nextPeriod() => _showPeriod(period.value!.next);
+
+  Future<void> _showPeriod(Period value) {
+    period.value = value;
+    _followsCurrent = value == settings.currentPeriod(_clock());
     return load();
   }
 

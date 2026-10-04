@@ -2,6 +2,7 @@ import 'package:calculator/app/data/models/enums.dart';
 import 'package:calculator/app/data/repositories/recurring_repository.dart';
 import 'package:calculator/app/data/repositories/transaction_repository.dart';
 import 'package:calculator/app/modules/recurring_form/controllers/recurring_form_controller.dart';
+import 'package:calculator/app/services/database_service.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 
@@ -83,4 +84,57 @@ void main() {
     expect(c.categoryId.value, isNull);
     expect(c.visibleCategories.map((x) => x.name), ['راتب', 'دخل آخر']);
   });
+
+  test('moving the day later after it ran does not charge this month twice', () async {
+    final c = await open();
+    c.amountText.value = '25';
+    c.selectCategory(3);
+    await c.save();
+    final id = (await Get.find<RecurringRepository>().getAll()).single.id;
+    Get.delete<RecurringFormController>();
+
+    final edit = Get.put(RecurringFormController(
+      recurring: Get.find(),
+      categories: Get.find(),
+      settings: Get.find(),
+      editId: id,
+      clock: () => DateTime(2026, 10, 25),
+    ));
+    await edit.ready;
+    edit.setDay(20);
+    await edit.save();
+    final october = (await Get.find<TransactionRepository>().getAll())
+        .where((t) => t.date.month == 10);
+    expect(october, hasLength(1));
+  });
+
+  test('a rule is saved once even when the catch-up afterwards fails', () async {
+    final failing = _ClosesBeforeCatchUp(Get.find<DatabaseService>());
+    final c = Get.put(RecurringFormController(
+      recurring: failing,
+      categories: Get.find(),
+      settings: Get.find(),
+      clock: () => today,
+    ));
+    await c.ready;
+    c.amountText.value = '25';
+    c.selectCategory(3);
+    expect(await c.save(), isTrue);
+    expect(failing.rulesBeforeCatchUp, 1);
+  });
+}
+
+/// Saves rules normally, then makes the catch-up fail (closed database).
+class _ClosesBeforeCatchUp extends RecurringRepository {
+  _ClosesBeforeCatchUp(this.database) : super(database);
+
+  final DatabaseService database;
+  int? rulesBeforeCatchUp;
+
+  @override
+  Future<int> applyDue(DateTime today) async {
+    rulesBeforeCatchUp = (await getAll()).length;
+    await database.db.close();
+    return super.applyDue(today);
+  }
 }

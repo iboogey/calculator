@@ -13,7 +13,6 @@ import '../../../data/models/quick_template.dart';
 import '../../../data/models/transaction_category.dart';
 import '../../../data/models/transaction_record.dart';
 import '../../../data/repositories/category_repository.dart';
-import '../../../data/repositories/template_repository.dart';
 import '../../../data/repositories/transaction_repository.dart';
 import '../../../services/message_service.dart';
 import '../../../services/settings_service.dart';
@@ -23,14 +22,12 @@ class TransactionFormController extends GetxController {
   TransactionFormController({
     required this.transactions,
     required this.categories,
-    required this.templates,
     required this.settings,
     this.editId,
   });
 
   final TransactionRepository transactions;
   final CategoryRepository categories;
-  final TemplateRepository templates;
   final SettingsService settings;
   final int? editId;
 
@@ -136,17 +133,19 @@ class TransactionFormController extends GetxController {
               DateTime.now().millisecondsSinceEpoch),
     );
     if (_editing == null) {
-      await transactions.add(record);
-      if (saveAsFavorite.value) {
-        await templates.add(QuickTemplate(
-          label: note.isNotEmpty
-              ? note
-              : _allCategories.firstWhere((c) => c.id == category).name,
-          kind: record.kind,
-          amount: value,
-          categoryId: category,
-        ));
-      }
+      await transactions.add(
+        record,
+        favorite: saveAsFavorite.value
+            ? QuickTemplate(
+                label: note.isNotEmpty
+                    ? note
+                    : _allCategories.firstWhere((c) => c.id == category).name,
+                kind: record.kind,
+                amount: value,
+                categoryId: category,
+              )
+            : null,
+      );
     } else {
       await transactions.update(record);
     }

@@ -1,5 +1,8 @@
 import '../../core/utils/date_utils.dart';
+import 'package:sqflite/sqflite.dart';
+
 import '../../services/database_service.dart';
+import '../models/quick_template.dart';
 import '../models/transaction_record.dart';
 
 class TransactionRepository {
@@ -10,8 +13,23 @@ class TransactionRepository {
   static const _table = 'transactions';
   static const _newestFirst = 'date DESC, created_at DESC, id DESC';
 
-  Future<TransactionRecord> add(TransactionRecord record) async {
-    final id = await _database.db.insert(_table, record.toMap()..remove('id'));
+  /// Saves [record]. With a [favorite], both are saved in one database
+  /// transaction: either both exist afterwards or neither does.
+  Future<TransactionRecord> add(
+    TransactionRecord record, {
+    QuickTemplate? favorite,
+  }) async {
+    final id = await _database.db.transaction((txn) async {
+      final id = await txn.insert(_table, record.toMap()..remove('id'));
+      if (favorite != null) {
+        final next = Sqflite.firstIntValue(await txn.rawQuery(
+                'SELECT COALESCE(MAX(sort_order), -1) + 1 FROM quick_templates')) ??
+            0;
+        await txn.insert('quick_templates',
+            favorite.toMap()..remove('id')..['sort_order'] = next);
+      }
+      return id;
+    });
     _database.notifyChanged();
     return record.withId(id);
   }

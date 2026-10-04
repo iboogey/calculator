@@ -9,7 +9,6 @@ class TransactionFormBinding extends Bindings {
     Get.lazyPut(() => TransactionFormController(
           transactions: Get.find(),
           categories: Get.find(),
-          templates: Get.find(),
           settings: Get.find(),
           editId: args is int ? args : null,
         ));

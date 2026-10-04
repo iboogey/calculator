@@ -31,7 +31,7 @@ void main() {
 
   test('saving with "save as favorite" also creates a favorite', () async {
     final form = Get.put(TransactionFormController(
-        transactions: Get.find(), categories: Get.find(), templates: Get.find(), settings: Get.find()));
+        transactions: Get.find(), categories: Get.find(), settings: Get.find()));
     await form.ready;
     for (final key in ['1', '.', '5']) {
       form.pressKey(key);
@@ -48,7 +48,7 @@ void main() {
 
   test('a favorite without a note is named after its category', () async {
     final form = Get.put(TransactionFormController(
-        transactions: Get.find(), categories: Get.find(), templates: Get.find(), settings: Get.find()));
+        transactions: Get.find(), categories: Get.find(), settings: Get.find()));
     await form.ready;
     form.pressKey('3');
     form.selectCategory(2);
