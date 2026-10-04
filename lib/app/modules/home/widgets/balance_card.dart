@@ -5,15 +5,24 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/currencies.dart';
 import '../../../widgets/money_text.dart';
 
-/// "Remaining from salary" with this period's breakdown.
+/// "Remaining from salary" with this period's breakdown, total savings and
+/// everything the user has (spec §6.3).
 class BalanceCard extends StatelessWidget {
-  const BalanceCard({super.key, required this.summary, required this.currency});
+  const BalanceCard({
+    super.key,
+    required this.summary,
+    required this.currency,
+    this.onSavingsTap,
+  });
 
   final BalanceSummary summary;
   final Currency currency;
+  final VoidCallback? onSavingsTap;
 
   @override
   Widget build(BuildContext context) {
+    String label(int amount) =>
+        MoneyText.label(amount, currency, showSymbol: false);
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -32,43 +41,37 @@ class BalanceCard extends StatelessWidget {
             style: TextStyle(
               fontSize: 34,
               fontWeight: FontWeight.w700,
-              color: summary.remaining < 0
-                  ? AppColors.negativeOnDark
-                  : Colors.white,
+              color: summary.remaining < 0 ? AppColors.negativeOnDark : Colors.white,
             ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'دخل ${label(summary.income)} · مصاريف ${label(summary.expenses)}'
+            '${summary.saved == 0 ? '' : ' · للادخار ${label(summary.saved)}'}'
+            '${summary.carriedOver == 0 ? '' : ' · مرحّل ${label(summary.carriedOver)}'}',
+            style: const TextStyle(color: AppColors.onPrimaryMuted, fontSize: 12),
           ),
           const SizedBox(height: 16),
           Row(
             children: [
               Expanded(
                 child: _Stat(
-                    label: 'الدخل',
-                    amount: summary.income,
-                    currency: currency,
-                    showPlus: true),
+                  label: 'مجموع المدخرات',
+                  amount: summary.totalSavings,
+                  currency: currency,
+                  onTap: onSavingsTap,
+                ),
               ),
               const SizedBox(width: 10),
               Expanded(
                 child: _Stat(
-                    label: 'المصاريف',
-                    amount: -summary.expenses,
-                    currency: currency),
+                  label: 'الكلي معك',
+                  amount: summary.total,
+                  currency: currency,
+                ),
               ),
             ],
           ),
-          if (summary.carriedOver != 0) ...[
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                const Text('مرحّل من الفترة الماضية: ',
-                    style: TextStyle(color: AppColors.onPrimaryMuted, fontSize: 12)),
-                MoneyText(summary.carriedOver,
-                    currency: currency,
-                    showPlus: true,
-                    style: const TextStyle(color: Colors.white, fontSize: 12)),
-              ],
-            ),
-          ],
         ],
       ),
     );
@@ -80,35 +83,48 @@ class _Stat extends StatelessWidget {
     required this.label,
     required this.amount,
     required this.currency,
-    this.showPlus = false,
+    this.onTap,
   });
 
   final String label;
   final int amount;
   final Currency currency;
-  final bool showPlus;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: AppColors.primaryCard,
+    return Material(
+      color: AppColors.primaryCard,
+      borderRadius: BorderRadius.circular(14),
+      child: InkWell(
         borderRadius: BorderRadius.circular(14),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(label,
-              style: const TextStyle(color: AppColors.onPrimaryMuted, fontSize: 12)),
-          const SizedBox(height: 2),
-          MoneyText(amount,
-              currency: currency,
-              showPlus: showPlus,
-              showSymbol: false,
-              style: const TextStyle(
-                  color: Colors.white, fontSize: 17, fontWeight: FontWeight.w600)),
-        ],
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(label,
+                        style: const TextStyle(
+                            color: AppColors.onPrimaryMuted, fontSize: 12)),
+                  ),
+                  if (onTap != null)
+                    const Icon(Icons.chevron_right,
+                        color: AppColors.onPrimaryMuted, size: 18),
+                ],
+              ),
+              const SizedBox(height: 2),
+              MoneyText(amount,
+                  currency: currency,
+                  showSymbol: false,
+                  style: const TextStyle(
+                      color: Colors.white, fontSize: 17, fontWeight: FontWeight.w600)),
+            ],
+          ),
+        ),
       ),
     );
   }

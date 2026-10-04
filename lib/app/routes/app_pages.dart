@@ -8,6 +8,8 @@ import '../modules/goal_form/bindings/goal_form_binding.dart';
 import '../modules/goal_form/views/goal_form_view.dart';
 import '../modules/home/bindings/home_binding.dart';
 import '../modules/home/views/home_view.dart';
+import '../modules/month_end/bindings/month_end_binding.dart';
+import '../modules/month_end/views/month_end_view.dart';
 import '../modules/recurring/bindings/recurring_binding.dart';
 import '../modules/recurring/views/recurring_view.dart';
 import '../modules/recurring_form/bindings/recurring_form_binding.dart';
@@ -77,6 +79,12 @@ abstract final class AppPages {
       name: Routes.goalDetail,
       page: () => const GoalDetailView(),
       binding: GoalDetailBinding(),
+    ),
+    GetPage(
+      name: Routes.monthEnd,
+      page: () => const MonthEndView(),
+      binding: MonthEndBinding(),
+      fullscreenDialog: true,
     ),
     GetPage(
       name: Routes.settings,
