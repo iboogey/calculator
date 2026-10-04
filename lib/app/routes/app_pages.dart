@@ -14,6 +14,8 @@ import '../modules/recurring/bindings/recurring_binding.dart';
 import '../modules/recurring/views/recurring_view.dart';
 import '../modules/recurring_form/bindings/recurring_form_binding.dart';
 import '../modules/recurring_form/views/recurring_form_view.dart';
+import '../modules/reports/bindings/reports_binding.dart';
+import '../modules/reports/views/reports_view.dart';
 import '../modules/savings/bindings/savings_binding.dart';
 import '../modules/savings/views/savings_view.dart';
 import '../modules/settings/bindings/settings_binding.dart';
@@ -40,6 +42,12 @@ abstract final class AppPages {
       name: Routes.transactions,
       page: () => const TransactionsView(),
       binding: TransactionsBinding(),
+      transition: Transition.noTransition,
+    ),
+    GetPage(
+      name: Routes.reports,
+      page: () => const ReportsView(),
+      binding: ReportsBinding(),
       transition: Transition.noTransition,
     ),
     GetPage(
