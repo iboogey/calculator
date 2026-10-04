@@ -2,6 +2,7 @@ import 'dart:math';
 
 import 'package:flutter/widgets.dart';
 import 'package:get/get.dart';
+import 'package:sqflite/sqflite.dart';
 
 import '../../../core/utils/amount_input.dart';
 import '../../../core/utils/currencies.dart';
@@ -12,6 +13,7 @@ import '../../../data/models/transaction_category.dart';
 import '../../../data/models/transaction_record.dart';
 import '../../../data/repositories/category_repository.dart';
 import '../../../data/repositories/transaction_repository.dart';
+import '../../../services/message_service.dart';
 import '../../../services/settings_service.dart';
 
 /// Add a new transaction, or edit/delete the one with [editId].
@@ -95,13 +97,16 @@ class TransactionFormController extends GetxController {
 
   void setDate(DateTime value) => date.value = DateKeys.dateOnly(value);
 
-  /// Saves the form. Returns false (and saves nothing) when it is incomplete
-  /// or a save is already running, so a double tap cannot save twice.
+  /// Saves the form. Returns false (and saves nothing) when it is incomplete,
+  /// a save is already running, or the database fails (a message is shown).
   Future<bool> save() async {
     if (!canSave) return false;
     isSaving.value = true;
     try {
       return await _save();
+    } on DatabaseException {
+      Get.find<MessageService>().showError('ما قدرنا نحفظ العملية، جرّب مرة ثانية');
+      return false;
     } finally {
       isSaving.value = false;
     }
@@ -134,7 +139,7 @@ class TransactionFormController extends GetxController {
   }
 
   /// Deletes the edited record. Returns false when there is nothing to
-  /// delete or a save/delete is already running.
+  /// delete, a save/delete is already running, or the database fails.
   Future<bool> delete() async {
     final id = _editing?.id;
     if (id == null || isSaving.value) return false;
@@ -142,6 +147,9 @@ class TransactionFormController extends GetxController {
     try {
       await transactions.delete(id);
       return true;
+    } on DatabaseException {
+      Get.find<MessageService>().showError('ما قدرنا نحذف العملية، جرّب مرة ثانية');
+      return false;
     } finally {
       isSaving.value = false;
     }

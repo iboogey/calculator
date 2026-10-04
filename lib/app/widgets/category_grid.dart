@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
-import '../../../core/theme/app_colors.dart';
-import '../../../core/theme/category_icons.dart';
-import '../../../data/models/transaction_category.dart';
+import '../core/theme/app_colors.dart';
+import '../core/theme/category_icons.dart';
+import '../data/models/transaction_category.dart';
 
 class CategoryGrid extends StatelessWidget {
   const CategoryGrid({

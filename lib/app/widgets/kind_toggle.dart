@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../../data/models/enums.dart';
+import '../data/models/enums.dart';
 
 class KindToggle extends StatelessWidget {
   const KindToggle({super.key, required this.value, required this.onChanged});

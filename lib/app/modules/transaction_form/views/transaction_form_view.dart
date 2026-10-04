@@ -6,8 +6,8 @@ import '../../../core/utils/date_utils.dart';
 import '../../../widgets/amount_keypad.dart';
 import '../controllers/transaction_form_controller.dart';
 import '../widgets/amount_display.dart';
-import '../widgets/category_grid.dart';
-import '../widgets/kind_toggle.dart';
+import '../../../widgets/category_grid.dart';
+import '../../../widgets/kind_toggle.dart';
 
 class TransactionFormView extends GetView<TransactionFormController> {
   const TransactionFormView({super.key});
