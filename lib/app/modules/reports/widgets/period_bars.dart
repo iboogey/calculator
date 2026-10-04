@@ -5,14 +5,18 @@ import '../../../core/logic/report_calculator.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/date_utils.dart';
 
-/// Expenses of the last periods as bars; the shown period is highlighted.
+/// Expenses of the last periods as bars, newest on the left so the months
+/// read right-to-left like the rest of the Arabic UI. The shown period is
+/// highlighted.
 class PeriodBars extends StatelessWidget {
   const PeriodBars({super.key, required this.totals});
 
+  /// Oldest first, as [ReportCalculator.totals] returns them.
   final List<PeriodTotals> totals;
 
   @override
   Widget build(BuildContext context) {
+    final newestFirst = totals.reversed.toList();
     final maxValue = totals.fold(0, (m, t) => t.expenses > m ? t.expenses : m);
     return SizedBox(
       height: 160,
@@ -33,7 +37,7 @@ class PeriodBars extends StatelessWidget {
                 showTitles: true,
                 reservedSize: 28,
                 getTitlesWidget: (value, meta) {
-                  final period = totals[value.toInt()].period;
+                  final period = newestFirst[value.toInt()].period;
                   return SideTitleWidget(
                     meta: meta,
                     child: Text(ArabicDates.months[period.start.month - 1],
@@ -44,12 +48,12 @@ class PeriodBars extends StatelessWidget {
             ),
           ),
           barGroups: [
-            for (final (index, total) in totals.indexed)
+            for (final (index, total) in newestFirst.indexed)
               BarChartGroupData(x: index, barRods: [
                 BarChartRodData(
                   toY: total.expenses.toDouble(),
                   width: 22,
-                  color: index == totals.length - 1
+                  color: index == 0
                       ? AppColors.primary
                       : const Color(0xFFC8D6D0),
                   borderRadius: const BorderRadius.vertical(top: Radius.circular(6)),

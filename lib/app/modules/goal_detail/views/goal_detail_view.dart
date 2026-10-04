@@ -67,7 +67,11 @@ class GoalDetailView extends GetView<GoalDetailController> {
                 const SizedBox(width: 10),
                 Expanded(
                   child: OutlinedButton.icon(
-                    style: OutlinedButton.styleFrom(minimumSize: const Size.fromHeight(56)),
+                    style: OutlinedButton.styleFrom(
+                      minimumSize: const Size.fromHeight(56),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16)),
+                    ),
                     onPressed: () => _ask(context, 'سحب من الهدف', controller.withdraw),
                     icon: const Icon(Icons.remove),
                     label: const Text('سحب'),

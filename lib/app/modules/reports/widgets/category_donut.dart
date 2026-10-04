@@ -77,10 +77,12 @@ class CategoryDonut extends StatelessWidget {
                     showSymbol: false,
                     style: const TextStyle(color: AppColors.muted, fontSize: 13)),
                 const SizedBox(width: 12),
-                SizedBox(
-                  width: 40,
+                ConstrainedBox(
+                  constraints: const BoxConstraints(minWidth: 44),
                   child: Text('${share.percent}%',
                       textAlign: TextAlign.end,
+                      maxLines: 1,
+                      softWrap: false,
                       style: const TextStyle(fontWeight: FontWeight.w700)),
                 ),
               ],
