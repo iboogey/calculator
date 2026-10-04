@@ -24,7 +24,7 @@ class CategoryGrid extends StatelessWidget {
       physics: const NeverScrollableScrollPhysics(),
       mainAxisSpacing: 8,
       crossAxisSpacing: 8,
-      childAspectRatio: 1.1,
+      childAspectRatio: 1.45,
       children: [
         for (final category in categories)
           _CategoryChoice(

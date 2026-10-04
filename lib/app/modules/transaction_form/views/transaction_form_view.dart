@@ -37,11 +37,11 @@ class TransactionFormView extends GetView<TransactionFormController> {
                 children: [
                   Obx(() => KindToggle(
                       value: controller.kind.value, onChanged: controller.setKind)),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 12),
                   Obx(() => AmountDisplay(
                       text: controller.amountText.value,
                       currency: controller.currency)),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 12),
                   const Text('التصنيف',
                       style: TextStyle(color: AppColors.muted, fontSize: 13)),
                   const SizedBox(height: 8),

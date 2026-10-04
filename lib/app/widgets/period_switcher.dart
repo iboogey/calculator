@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 
 import '../core/logic/period.dart';
 
-/// "‹ 1 تشرين الأول – 31 تشرين الأول ›". In RTL the right arrow goes back.
+/// "› 1 تشرين الأول – 31 تشرين الأول ‹". Chevron icons mirror in RTL, so
+/// chevron_left draws pointing right: back towards the start of the line.
 class PeriodSwitcher extends StatelessWidget {
   const PeriodSwitcher({
     super.key,
@@ -22,7 +23,7 @@ class PeriodSwitcher extends StatelessWidget {
       children: [
         IconButton(
           tooltip: 'الفترة السابقة',
-          icon: const Icon(Icons.chevron_right),
+          icon: const Icon(Icons.chevron_left),
           onPressed: onPrevious,
         ),
         Flexible(
@@ -35,7 +36,7 @@ class PeriodSwitcher extends StatelessWidget {
         ),
         IconButton(
           tooltip: 'الفترة التالية',
-          icon: const Icon(Icons.chevron_left),
+          icon: const Icon(Icons.chevron_right),
           onPressed: onNext,
         ),
       ],

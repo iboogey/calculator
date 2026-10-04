@@ -97,14 +97,14 @@ class SettingsView extends GetView<SettingsController> {
                   ListTile(
                     leading: const Icon(Icons.event_repeat_outlined),
                     title: const Text('المصاريف الثابتة'),
-                    trailing: const Icon(Icons.chevron_left),
+                    trailing: const Icon(Icons.chevron_right),
                     onTap: controller.openRecurring,
                   ),
                   const Divider(indent: 16, endIndent: 16),
                   ListTile(
                     leading: const Icon(Icons.star_outline),
                     title: const Text('المفضّلة'),
-                    trailing: const Icon(Icons.chevron_left),
+                    trailing: const Icon(Icons.chevron_right),
                     onTap: controller.openFavorites,
                   ),
                 ],

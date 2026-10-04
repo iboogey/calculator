@@ -1,4 +1,5 @@
 import 'package:calculator/app/app_widget.dart';
+import 'package:calculator/app/widgets/amount_keypad.dart';
 import 'package:calculator/app/data/repositories/budget_repository.dart';
 import 'package:calculator/app/data/repositories/transaction_repository.dart';
 import 'package:get/get.dart';
@@ -119,6 +120,19 @@ void main() {
     expect(find.text('انضافت: قهوة'), findsOneWidget);
     final all = await tester.runAsync(Get.find<TransactionRepository>().getAll);
     expect(all, hasLength(2));
+  });
+
+  testWidgets('on an iPhone-sized screen the note and favorite option sit above the keypad', (tester) async {
+    await boot(tester);
+    // iPhone 17 Pro: 402×874 points, minus the status bar and home indicator.
+    tester.view.physicalSize = const Size(1206, 2622);
+    tester.view.padding = const FakeViewPadding(top: 186, bottom: 102);
+    await tester.tap(find.byTooltip('إضافة عملية'));
+    await idle(tester);
+
+    final keypadTop = tester.getTopLeft(find.byType(AmountKeypad)).dy;
+    expect(tester.getBottomLeft(find.byType(TextField)).dy, lessThanOrEqualTo(keypadTop));
+    expect(tester.getBottomLeft(find.byType(CheckboxListTile)).dy, lessThanOrEqualTo(keypadTop));
   });
 }
 
