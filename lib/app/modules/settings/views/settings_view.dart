@@ -57,11 +57,72 @@ class SettingsView extends GetView<SettingsController> {
                 ),
               ),
             ),
+            const _SectionTitle('التذكير اليومي'),
+            Card(
+              child: Column(
+                children: [
+                  SwitchListTile(
+                    title: const Text('ذكّرني أسجّل مصاريفي'),
+                    value: settings.reminderEnabled,
+                    onChanged: controller.setReminderEnabled,
+                  ),
+                  ListTile(
+                    enabled: settings.reminderEnabled,
+                    title: const Text('الساعة'),
+                    trailing: Text(
+                      controller.reminderLabel,
+                      textDirection: TextDirection.ltr,
+                      style: const TextStyle(fontWeight: FontWeight.w600),
+                    ),
+                    onTap: () => _pickTime(context, settings.reminderMinutes),
+                  ),
+                  if (!controller.permissionGranted)
+                    const Padding(
+                      padding: EdgeInsets.fromLTRB(16, 0, 16, 12),
+                      child: Text(
+                        'الإشعارات مطفية للتطبيق. فعّلها من إعدادات الجهاز لتوصلك التذكيرات وتنبيهات الميزانية.',
+                        style: TextStyle(
+                          color: AppColors.warning,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            const _SectionTitle('إدارة'),
+            Card(
+              child: Column(
+                children: [
+                  ListTile(
+                    leading: const Icon(Icons.event_repeat_outlined),
+                    title: const Text('المصاريف الثابتة'),
+                    trailing: const Icon(Icons.chevron_left),
+                    onTap: controller.openRecurring,
+                  ),
+                  const Divider(indent: 16, endIndent: 16),
+                  ListTile(
+                    leading: const Icon(Icons.star_outline),
+                    title: const Text('المفضّلة'),
+                    trailing: const Icon(Icons.chevron_left),
+                    onTap: controller.openFavorites,
+                  ),
+                ],
+              ),
+            ),
           ],
         );
       }),
       bottomNavigationBar: const AppBottomNav(current: Routes.settings),
     );
+  }
+
+  Future<void> _pickTime(BuildContext context, int minutes) async {
+    final picked = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay(hour: minutes ~/ 60, minute: minutes % 60),
+    );
+    if (picked != null) controller.setReminderTime(picked.hour, picked.minute);
   }
 }
 
@@ -74,9 +135,14 @@ class _SectionTitle extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(4, 16, 4, 8),
-      child: Text(text,
-          style: const TextStyle(
-              color: AppColors.muted, fontSize: 13, fontWeight: FontWeight.w600)),
+      child: Text(
+        text,
+        style: const TextStyle(
+          color: AppColors.muted,
+          fontSize: 13,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
     );
   }
 }

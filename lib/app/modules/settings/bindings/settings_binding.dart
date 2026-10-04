@@ -5,6 +5,7 @@ import '../controllers/settings_controller.dart';
 class SettingsBinding extends Bindings {
   @override
   void dependencies() {
-    Get.lazyPut(() => SettingsController(settingsService: Get.find()));
+    Get.lazyPut(() => SettingsController(
+        settingsService: Get.find(), notifications: Get.find()));
   }
 }

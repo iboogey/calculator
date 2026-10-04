@@ -48,7 +48,7 @@ void main() {
   });
 
   test('a failed settings change keeps the old value and shows a message', () async {
-    final c = Get.put(SettingsController(settingsService: Get.find()));
+    final c = Get.put(SettingsController(settingsService: Get.find(), notifications: Get.find()));
     await breakDatabase();
     await c.setStartDay(25);
     expect(Get.find<SettingsService>().settings.value.periodStartDay, 1);
