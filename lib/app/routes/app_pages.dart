@@ -1,0 +1,42 @@
+import 'package:get/get.dart';
+
+import '../modules/home/bindings/home_binding.dart';
+import '../modules/home/views/home_view.dart';
+import '../modules/settings/bindings/settings_binding.dart';
+import '../modules/settings/views/settings_view.dart';
+import '../modules/transaction_form/bindings/transaction_form_binding.dart';
+import '../modules/transaction_form/views/transaction_form_view.dart';
+import '../modules/transactions/bindings/transactions_binding.dart';
+import '../modules/transactions/views/transactions_view.dart';
+import 'app_routes.dart';
+
+abstract final class AppPages {
+  static const initial = Routes.home;
+
+  static final pages = [
+    GetPage(
+      name: Routes.home,
+      page: () => const HomeView(),
+      binding: HomeBinding(),
+      transition: Transition.noTransition,
+    ),
+    GetPage(
+      name: Routes.transactions,
+      page: () => const TransactionsView(),
+      binding: TransactionsBinding(),
+      transition: Transition.noTransition,
+    ),
+    GetPage(
+      name: Routes.settings,
+      page: () => const SettingsView(),
+      binding: SettingsBinding(),
+      transition: Transition.noTransition,
+    ),
+    GetPage(
+      name: Routes.transactionForm,
+      page: () => const TransactionFormView(),
+      binding: TransactionFormBinding(),
+      fullscreenDialog: true,
+    ),
+  ];
+}
