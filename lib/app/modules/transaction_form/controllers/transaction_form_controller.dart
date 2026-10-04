@@ -9,9 +9,11 @@ import '../../../core/utils/currencies.dart';
 import '../../../core/utils/date_utils.dart';
 import '../../../core/utils/money.dart';
 import '../../../data/models/enums.dart';
+import '../../../data/models/quick_template.dart';
 import '../../../data/models/transaction_category.dart';
 import '../../../data/models/transaction_record.dart';
 import '../../../data/repositories/category_repository.dart';
+import '../../../data/repositories/template_repository.dart';
 import '../../../data/repositories/transaction_repository.dart';
 import '../../../services/message_service.dart';
 import '../../../services/settings_service.dart';
@@ -21,12 +23,14 @@ class TransactionFormController extends GetxController {
   TransactionFormController({
     required this.transactions,
     required this.categories,
+    required this.templates,
     required this.settings,
     this.editId,
   });
 
   final TransactionRepository transactions;
   final CategoryRepository categories;
+  final TemplateRepository templates;
   final SettingsService settings;
   final int? editId;
 
@@ -36,6 +40,7 @@ class TransactionFormController extends GetxController {
   final date = DateKeys.dateOnly(DateTime.now()).obs;
   final isEditing = false.obs;
   final isSaving = false.obs;
+  final saveAsFavorite = false.obs;
   final _allCategories = <TransactionCategory>[].obs;
   final noteController = TextEditingController();
 
@@ -132,6 +137,16 @@ class TransactionFormController extends GetxController {
     );
     if (_editing == null) {
       await transactions.add(record);
+      if (saveAsFavorite.value) {
+        await templates.add(QuickTemplate(
+          label: note.isNotEmpty
+              ? note
+              : _allCategories.firstWhere((c) => c.id == category).name,
+          kind: record.kind,
+          amount: value,
+          categoryId: category,
+        ));
+      }
     } else {
       await transactions.update(record);
     }

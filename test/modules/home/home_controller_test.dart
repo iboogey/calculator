@@ -15,6 +15,8 @@ void main() {
       transactions: Get.find(),
       categories: Get.find(),
       savings: Get.find(),
+      templates: Get.find(),
+      budgets: Get.find(),
       settings: Get.find(),
       database: Get.find(),
       clock: () => now,

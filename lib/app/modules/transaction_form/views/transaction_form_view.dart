@@ -74,6 +74,18 @@ class TransactionFormView extends GetView<TransactionFormController> {
                           )),
                     ],
                   ),
+                  Obx(() => controller.isEditing.value
+                      ? const SizedBox.shrink()
+                      : CheckboxListTile(
+                          contentPadding: EdgeInsets.zero,
+                          dense: true,
+                          controlAffinity: ListTileControlAffinity.leading,
+                          value: controller.saveAsFavorite.value,
+                          onChanged: (v) =>
+                              controller.saveAsFavorite.value = v ?? false,
+                          title: const Text(
+                              'احفظها كمفضّلة (زر بضغطة وحدة بالرئيسية)'),
+                        )),
                 ],
               ),
             ),

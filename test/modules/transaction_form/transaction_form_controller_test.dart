@@ -16,6 +16,7 @@ void main() {
     final controller = Get.put(TransactionFormController(
       transactions: Get.find(),
       categories: Get.find(),
+      templates: Get.find(),
       settings: Get.find(),
       editId: editId,
     ));

@@ -10,6 +10,8 @@ import '../modules/recurring_form/bindings/recurring_form_binding.dart';
 import '../modules/recurring_form/views/recurring_form_view.dart';
 import '../modules/settings/bindings/settings_binding.dart';
 import '../modules/settings/views/settings_view.dart';
+import '../modules/templates/bindings/templates_binding.dart';
+import '../modules/templates/views/templates_view.dart';
 import '../modules/transaction_form/bindings/transaction_form_binding.dart';
 import '../modules/transaction_form/views/transaction_form_view.dart';
 import '../modules/transactions/bindings/transactions_binding.dart';
@@ -48,6 +50,11 @@ abstract final class AppPages {
       page: () => const RecurringFormView(),
       binding: RecurringFormBinding(),
       fullscreenDialog: true,
+    ),
+    GetPage(
+      name: Routes.templates,
+      page: () => const TemplatesView(),
+      binding: TemplatesBinding(),
     ),
     GetPage(
       name: Routes.settings,
