@@ -1,4 +1,5 @@
 import 'package:get/get.dart';
+import 'package:sqflite/sqflite.dart';
 
 import '../../../core/logic/day_group.dart';
 import '../../../core/logic/period.dart';
@@ -9,6 +10,7 @@ import '../../../data/repositories/category_repository.dart';
 import '../../../data/repositories/transaction_repository.dart';
 import '../../../routes/app_routes.dart';
 import '../../../services/database_service.dart';
+import '../../../services/message_service.dart';
 import '../../../services/settings_service.dart';
 
 class TransactionsController extends GetxController {
@@ -31,6 +33,10 @@ class TransactionsController extends GetxController {
   final categoriesById = <int, TransactionCategory>{}.obs;
 
   List<TransactionRecord> _items = const [];
+
+  /// True until the user moves to another period; then reloads keep showing
+  /// the period they chose.
+  bool _followsCurrent = true;
   late final Worker _reloadOnChange;
 
   Currency get currency => settings.currency;
@@ -46,7 +52,10 @@ class TransactionsController extends GetxController {
   }
 
   Future<void> load() async {
-    final current = period.value ??= settings.currentPeriod(_clock());
+    final current = _followsCurrent
+        ? settings.currentPeriod(_clock())
+        : period.value ?? settings.currentPeriod(_clock());
+    period.value = current;
     final items = await transactions.getBetween(current.start, current.end);
     final allCategories = await categories.getAll(includeArchived: true);
     categoriesById.assignAll({for (final c in allCategories) c.id!: c});
@@ -54,26 +63,38 @@ class TransactionsController extends GetxController {
     groups.assignAll(DayGroup.group(items));
   }
 
-  Future<void> previousPeriod() {
-    period.value = period.value!.previous;
-    return load();
-  }
+  Future<void> previousPeriod() => _showPeriod(period.value!.previous);
 
-  Future<void> nextPeriod() {
-    period.value = period.value!.next;
+  Future<void> nextPeriod() => _showPeriod(period.value!.next);
+
+  Future<void> _showPeriod(Period value) {
+    period.value = value;
+    _followsCurrent = value == settings.currentPeriod(_clock());
     return load();
   }
 
   /// Removes the row immediately (so a swipe-to-dismiss can finish), then
-  /// deletes it from the database.
-  Future<void> delete(TransactionRecord record) {
+  /// deletes it from the database. On failure the row comes back.
+  Future<void> delete(TransactionRecord record) async {
+    final before = _items;
     _items = _items.where((t) => t.id != record.id).toList();
     groups.assignAll(DayGroup.group(_items));
-    return transactions.delete(record.id!);
+    try {
+      await transactions.delete(record.id!);
+    } on DatabaseException {
+      _items = before;
+      groups.assignAll(DayGroup.group(_items));
+      Get.find<MessageService>().showError('ما قدرنا نحذف العملية، جرّب مرة ثانية');
+    }
   }
 
-  Future<void> undoDelete(TransactionRecord record) =>
-      transactions.restore(record);
+  Future<void> undoDelete(TransactionRecord record) async {
+    try {
+      await transactions.restore(record);
+    } on DatabaseException {
+      Get.find<MessageService>().showError('ما قدرنا نرجّع العملية');
+    }
+  }
 
   void openEdit(TransactionRecord record) =>
       Get.toNamed(Routes.transactionForm, arguments: record.id);

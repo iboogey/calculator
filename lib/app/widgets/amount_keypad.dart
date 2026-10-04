@@ -28,7 +28,7 @@ class AmountKeypad extends StatelessWidget {
         physics: const NeverScrollableScrollPhysics(),
         mainAxisSpacing: 8,
         crossAxisSpacing: 8,
-        childAspectRatio: 2.4,
+        childAspectRatio: 2.8,
         children: [
           for (final digit in _digits) _KeyButton(label: digit, onPressed: () => onKey(digit)),
           if (showDot)

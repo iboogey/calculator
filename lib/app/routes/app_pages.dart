@@ -1,9 +1,17 @@
 import 'package:get/get.dart';
 
+import '../modules/budgets/bindings/budgets_binding.dart';
+import '../modules/budgets/views/budgets_view.dart';
 import '../modules/home/bindings/home_binding.dart';
 import '../modules/home/views/home_view.dart';
+import '../modules/recurring/bindings/recurring_binding.dart';
+import '../modules/recurring/views/recurring_view.dart';
+import '../modules/recurring_form/bindings/recurring_form_binding.dart';
+import '../modules/recurring_form/views/recurring_form_view.dart';
 import '../modules/settings/bindings/settings_binding.dart';
 import '../modules/settings/views/settings_view.dart';
+import '../modules/templates/bindings/templates_binding.dart';
+import '../modules/templates/views/templates_view.dart';
 import '../modules/transaction_form/bindings/transaction_form_binding.dart';
 import '../modules/transaction_form/views/transaction_form_view.dart';
 import '../modules/transactions/bindings/transactions_binding.dart';
@@ -25,6 +33,28 @@ abstract final class AppPages {
       page: () => const TransactionsView(),
       binding: TransactionsBinding(),
       transition: Transition.noTransition,
+    ),
+    GetPage(
+      name: Routes.budgets,
+      page: () => const BudgetsView(),
+      binding: BudgetsBinding(),
+      transition: Transition.noTransition,
+    ),
+    GetPage(
+      name: Routes.recurring,
+      page: () => const RecurringView(),
+      binding: RecurringBinding(),
+    ),
+    GetPage(
+      name: Routes.recurringForm,
+      page: () => const RecurringFormView(),
+      binding: RecurringFormBinding(),
+      fullscreenDialog: true,
+    ),
+    GetPage(
+      name: Routes.templates,
+      page: () => const TemplatesView(),
+      binding: TemplatesBinding(),
     ),
     GetPage(
       name: Routes.settings,

@@ -22,11 +22,22 @@ class MoneyText extends StatelessWidget {
   final bool showPlus;
   final bool showSymbol;
 
-  @override
-  Widget build(BuildContext context) {
+  /// The same text as a plain string, for use inside a sentence.
+  static String label(
+    int amount,
+    Currency currency, {
+    bool showPlus = false,
+    bool showSymbol = true,
+  }) {
     final number =
         Money.format(amount, decimals: currency.decimals, showPlus: showPlus);
     final text = '\u2066$number\u2069';
-    return Text(showSymbol ? '$text ${currency.symbol}' : text, style: style);
+    return showSymbol ? '$text ${currency.symbol}' : text;
   }
+
+  @override
+  Widget build(BuildContext context) => Text(
+        label(amount, currency, showPlus: showPlus, showSymbol: showSymbol),
+        style: style,
+      );
 }

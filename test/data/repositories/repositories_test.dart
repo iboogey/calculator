@@ -1,10 +1,13 @@
 import 'package:calculator/app/data/models/enums.dart';
+import 'package:calculator/app/data/models/quick_template.dart';
 import 'package:calculator/app/data/repositories/category_repository.dart';
 import 'package:calculator/app/data/repositories/savings_repository.dart';
 import 'package:calculator/app/data/repositories/settings_repository.dart';
+import 'package:calculator/app/data/repositories/template_repository.dart';
 import 'package:calculator/app/data/repositories/transaction_repository.dart';
 import 'package:calculator/app/services/database_service.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 import '../../helpers/fixtures.dart';
 import '../../helpers/test_database.dart';
@@ -91,5 +94,20 @@ void main() {
       final all = await repo.getAllMovements();
       expect(all.single.amount, 100000);
     });
+  });
+
+  test('adding with a favorite saves both, or neither when one fails', () async {
+    final repo = TransactionRepository(database);
+    const favorite = QuickTemplate(
+        label: 'قهوة', kind: TransactionKind.expense, amount: 1500, categoryId: 1);
+    await repo.add(expense(1500, DateTime(2026, 10, 1)), favorite: favorite);
+    expect(await TemplateRepository(database).getAll(), hasLength(1));
+
+    const broken = QuickTemplate(
+        label: 'x', kind: TransactionKind.expense, amount: 1500, categoryId: 999);
+    await expectLater(repo.add(expense(1500, DateTime(2026, 10, 2)), favorite: broken),
+        throwsA(isA<DatabaseException>()));
+    expect(await repo.getAll(), hasLength(1));
+    expect(await TemplateRepository(database).getAll(), hasLength(1));
   });
 }

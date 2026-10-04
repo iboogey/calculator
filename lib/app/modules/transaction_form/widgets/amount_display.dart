@@ -20,7 +20,7 @@ class AmountDisplay extends StatelessWidget {
         Text(
           '\u2066$shown\u2069 ${currency.symbol}',
           style: const TextStyle(
-              fontSize: 44, fontWeight: FontWeight.w700, color: AppColors.ink),
+              fontSize: 36, fontWeight: FontWeight.w700, color: AppColors.ink),
         ),
       ],
     );

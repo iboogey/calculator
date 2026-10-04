@@ -6,8 +6,8 @@ import '../../../core/utils/date_utils.dart';
 import '../../../widgets/amount_keypad.dart';
 import '../controllers/transaction_form_controller.dart';
 import '../widgets/amount_display.dart';
-import '../widgets/category_grid.dart';
-import '../widgets/kind_toggle.dart';
+import '../../../widgets/category_grid.dart';
+import '../../../widgets/kind_toggle.dart';
 
 class TransactionFormView extends GetView<TransactionFormController> {
   const TransactionFormView({super.key});
@@ -37,11 +37,11 @@ class TransactionFormView extends GetView<TransactionFormController> {
                 children: [
                   Obx(() => KindToggle(
                       value: controller.kind.value, onChanged: controller.setKind)),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 12),
                   Obx(() => AmountDisplay(
                       text: controller.amountText.value,
                       currency: controller.currency)),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 12),
                   const Text('التصنيف',
                       style: TextStyle(color: AppColors.muted, fontSize: 13)),
                   const SizedBox(height: 8),
@@ -74,6 +74,18 @@ class TransactionFormView extends GetView<TransactionFormController> {
                           )),
                     ],
                   ),
+                  Obx(() => controller.isEditing.value
+                      ? const SizedBox.shrink()
+                      : CheckboxListTile(
+                          contentPadding: EdgeInsets.zero,
+                          dense: true,
+                          controlAffinity: ListTileControlAffinity.leading,
+                          value: controller.saveAsFavorite.value,
+                          onChanged: (v) =>
+                              controller.saveAsFavorite.value = v ?? false,
+                          title: const Text(
+                              'احفظها كمفضّلة (زر بضغطة وحدة بالرئيسية)'),
+                        )),
                 ],
               ),
             ),

@@ -1,4 +1,6 @@
 import 'package:calculator/app/app_widget.dart';
+import 'package:calculator/app/widgets/amount_keypad.dart';
+import 'package:calculator/app/data/repositories/budget_repository.dart';
 import 'package:calculator/app/data/repositories/transaction_repository.dart';
 import 'package:get/get.dart';
 
@@ -75,6 +77,81 @@ void main() {
     expect(tester.takeException(), isNull);
     final all = await tester.runAsync(repo.getAll);
     expect(all, hasLength(1));
+  });
+
+  testWidgets('the budgets tab shows a budget set from the repository', (tester) async {
+    await boot(tester);
+    await tester.runAsync(() => Get.find<BudgetRepository>().setLimit(1, 200000));
+    await tester.tap(find.text('الميزانية'));
+    await idle(tester);
+    expect(find.text('إضافة ميزانية'), findsOneWidget);
+    expect(find.text('أكل'), findsOneWidget);
+  });
+
+  testWidgets('Home warns when a budget is nearly used up', (tester) async {
+    await boot(tester);
+    await tester.runAsync(() async {
+      await Get.find<BudgetRepository>().setLimit(1, 10000);
+      await Get.find<TransactionRepository>().add(expense(9000, DateTime.now()));
+    });
+    await idle(tester);
+    expect(find.text('صرفت 90% من ميزانية أكل'), findsOneWidget);
+  });
+
+  testWidgets('saving a favorite puts a one-tap button on Home', (tester) async {
+    await boot(tester);
+    await tester.tap(find.byTooltip('إضافة عملية'));
+    await idle(tester);
+    await tester.tap(find.text('1'));
+    await tester.tap(find.text('.'));
+    await tester.tap(find.text('5'));
+    await tester.tap(find.text('أكل'));
+    await tester.enterText(find.byType(TextField), 'قهوة');
+    await tester.tap(find.byType(Checkbox));
+    await tester.pump();
+    await tester.tap(find.text('حفظ'));
+    await idle(tester);
+    await idle(tester);
+
+    final chip = find.textContaining('قهوة ·');
+    expect(chip, findsOneWidget);
+    await tester.tap(chip);
+    await brief(tester);
+    expect(find.text('انضافت: قهوة'), findsOneWidget);
+    final all = await tester.runAsync(Get.find<TransactionRepository>().getAll);
+    expect(all, hasLength(2));
+  });
+
+  testWidgets('on an iPhone-sized screen the note and favorite option sit above the keypad', (tester) async {
+    await boot(tester);
+    // iPhone 17 Pro: 402×874 points, minus the status bar and home indicator.
+    tester.view.physicalSize = const Size(1206, 2622);
+    tester.view.padding = const FakeViewPadding(top: 186, bottom: 102);
+    await tester.tap(find.byTooltip('إضافة عملية'));
+    await idle(tester);
+
+    final keypadTop = tester.getTopLeft(find.byType(AmountKeypad)).dy;
+    expect(tester.getBottomLeft(find.byType(TextField)).dy, lessThanOrEqualTo(keypadTop));
+    expect(tester.getBottomLeft(find.byType(CheckboxListTile)).dy, lessThanOrEqualTo(keypadTop));
+  });
+
+  testWidgets('adding a budget from its dialog closes cleanly', (tester) async {
+    await boot(tester);
+    await tester.tap(find.text('الميزانية'));
+    await idle(tester);
+    await tester.tap(find.text('إضافة ميزانية'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('أكل'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField), '10');
+    await tester.tap(find.text('حفظ'));
+    await tester.pump();
+    await tester.runAsync(settle);
+    await tester.pumpAndSettle();
+
+    expect(tester.takeException(), isNull);
+    final budgets = await tester.runAsync(Get.find<BudgetRepository>().getAll);
+    expect(budgets!.single.limitAmount, 10000);
   });
 }
 

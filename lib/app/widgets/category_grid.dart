@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
-import '../../../core/theme/app_colors.dart';
-import '../../../core/theme/category_icons.dart';
-import '../../../data/models/transaction_category.dart';
+import '../core/theme/app_colors.dart';
+import '../core/theme/category_icons.dart';
+import '../data/models/transaction_category.dart';
 
 class CategoryGrid extends StatelessWidget {
   const CategoryGrid({
@@ -24,7 +24,7 @@ class CategoryGrid extends StatelessWidget {
       physics: const NeverScrollableScrollPhysics(),
       mainAxisSpacing: 8,
       crossAxisSpacing: 8,
-      childAspectRatio: 1.1,
+      childAspectRatio: 1.45,
       children: [
         for (final category in categories)
           _CategoryChoice(

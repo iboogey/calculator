@@ -1,5 +1,6 @@
 import 'package:calculator/app/data/repositories/transaction_repository.dart';
 import 'package:calculator/app/modules/transactions/controllers/transactions_controller.dart';
+import 'package:calculator/app/services/settings_service.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 
@@ -62,5 +63,22 @@ void main() {
     expect(await repo().getById(target.id!), target);
     await settle();
     expect(c.groups.expand((g) => g.transactions).map((t) => t.id), contains(target.id));
+  });
+
+  test('follows the current period when a new one starts', () async {
+    final c = await open(DateTime(2026, 10, 15));
+    expect(c.period.value!.key, '2026-10');
+    final settings = Get.find<SettingsService>();
+    await settings.update(settings.settings.value.copyWith(periodStartDay: 20));
+    await settle();
+    expect(c.period.value!.key, '2026-09');
+  });
+
+  test('stays on a period the user browsed to', () async {
+    final c = await open(DateTime(2026, 10, 15));
+    await c.previousPeriod();
+    await repo().add(expense(1000, DateTime(2026, 10, 15)));
+    await settle();
+    expect(c.period.value!.key, '2026-09');
   });
 }
