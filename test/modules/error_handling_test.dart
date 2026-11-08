@@ -23,7 +23,7 @@ void main() {
     final c = Get.put(TransactionFormController(
         transactions: Get.find(), categories: Get.find(), settings: Get.find()));
     await c.ready;
-    c.pressKey('5');
+    c.amountController.text = '5';
     c.selectCategory(foodCategoryId);
     await breakDatabase();
     expect(await c.save(), isFalse);

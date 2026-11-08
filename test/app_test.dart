@@ -1,5 +1,4 @@
 import 'package:calculator/app/app_widget.dart';
-import 'package:calculator/app/widgets/amount_keypad.dart';
 import 'package:calculator/app/data/repositories/budget_repository.dart';
 import 'package:calculator/app/data/repositories/transaction_repository.dart';
 import 'package:get/get.dart';
@@ -38,14 +37,14 @@ void main() {
     expect(find.textContaining('لسا ما سجلت'), findsOneWidget);
   });
 
-  testWidgets('adding an expense from the keypad updates Home', (tester) async {
+  testWidgets('adding an expense updates Home', (tester) async {
     await boot(tester);
 
     await tester.tap(find.byTooltip('إضافة عملية'));
     await idle(tester);
     expect(find.text('عملية جديدة'), findsOneWidget);
 
-    await tester.tap(find.text('5'));
+    await tester.enterText(find.byKey(const ValueKey('amount-field')), '5');
     await tester.tap(find.text('أكل'));
     await tester.pump();
     await tester.tap(find.text('حفظ'));
@@ -102,11 +101,9 @@ void main() {
     await boot(tester);
     await tester.tap(find.byTooltip('إضافة عملية'));
     await idle(tester);
-    await tester.tap(find.text('1'));
-    await tester.tap(find.text('.'));
-    await tester.tap(find.text('5'));
+    await tester.enterText(find.byKey(const ValueKey('amount-field')), '1.5');
     await tester.tap(find.text('أكل'));
-    await tester.enterText(find.byType(TextField), 'قهوة');
+    await tester.enterText(find.widgetWithText(TextField, 'ملاحظة (اختياري)'), 'قهوة');
     await tester.tap(find.byType(Checkbox));
     await tester.pump();
     await tester.tap(find.text('حفظ'));
@@ -122,7 +119,7 @@ void main() {
     expect(all, hasLength(2));
   });
 
-  testWidgets('on an iPhone-sized screen the note and favorite option sit above the keypad', (tester) async {
+  testWidgets('on an iPhone-sized screen the note and favorite option sit above Save', (tester) async {
     await boot(tester);
     // iPhone 17 Pro: 402×874 points, minus the status bar and home indicator.
     tester.view.physicalSize = const Size(1206, 2622);
@@ -130,9 +127,10 @@ void main() {
     await tester.tap(find.byTooltip('إضافة عملية'));
     await idle(tester);
 
-    final keypadTop = tester.getTopLeft(find.byType(AmountKeypad)).dy;
-    expect(tester.getBottomLeft(find.byType(TextField)).dy, lessThanOrEqualTo(keypadTop));
-    expect(tester.getBottomLeft(find.byType(CheckboxListTile)).dy, lessThanOrEqualTo(keypadTop));
+    final saveTop = tester.getTopLeft(find.byType(FilledButton)).dy;
+    final note = find.widgetWithText(TextField, 'ملاحظة (اختياري)');
+    expect(tester.getBottomLeft(note).dy, lessThanOrEqualTo(saveTop));
+    expect(tester.getBottomLeft(find.byType(CheckboxListTile)).dy, lessThanOrEqualTo(saveTop));
   });
 
   testWidgets('adding a budget from its dialog closes cleanly', (tester) async {

@@ -33,9 +33,7 @@ void main() {
     final form = Get.put(TransactionFormController(
         transactions: Get.find(), categories: Get.find(), settings: Get.find()));
     await form.ready;
-    for (final key in ['1', '.', '5']) {
-      form.pressKey(key);
-    }
+    form.amountController.text = '1.5';
     form.selectCategory(foodCategoryId);
     form.noteController.text = 'قهوة';
     form.saveAsFavorite.value = true;
@@ -50,7 +48,7 @@ void main() {
     final form = Get.put(TransactionFormController(
         transactions: Get.find(), categories: Get.find(), settings: Get.find()));
     await form.ready;
-    form.pressKey('3');
+    form.amountController.text = '3';
     form.selectCategory(2);
     form.saveAsFavorite.value = true;
     await form.save();

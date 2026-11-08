@@ -34,18 +34,16 @@ void main() {
     expect(c.visibleCategories, hasLength(8));
   });
 
-  test('keypad input plus a category makes it savable', () async {
+  test('a typed amount plus a category makes it savable', () async {
     final c = await open();
-    for (final key in ['1', '.', '5']) {
-      c.pressKey(key);
-    }
+    c.amountController.text = '1.5';
     expect(c.amountText.value, '1.5');
     expect(c.amount, 1500);
     expect(c.canSave, isFalse);
     c.selectCategory(foodCategoryId);
     expect(c.canSave, isTrue);
-    c.backspace();
-    expect(c.amountText.value, '1.');
+    c.amountController.text = '';
+    expect(c.canSave, isFalse);
   });
 
   test('switching to income clears the category and shows income categories', () async {
@@ -58,7 +56,7 @@ void main() {
 
   test('save adds a dated expense with a trimmed note', () async {
     final c = await open();
-    c.pressKey('5');
+    c.amountController.text = '5';
     c.selectCategory(foodCategoryId);
     c.noteController.text = '  غدا  ';
     expect(await c.save(), isTrue);
@@ -71,7 +69,7 @@ void main() {
 
   test('an empty note is stored as null', () async {
     final c = await open();
-    c.pressKey('5');
+    c.amountController.text = '5';
     c.selectCategory(foodCategoryId);
     c.noteController.text = '   ';
     await c.save();
@@ -81,7 +79,7 @@ void main() {
   test('save refuses without a valid amount', () async {
     final c = await open();
     c.selectCategory(foodCategoryId);
-    c.pressKey('0');
+    c.amountController.text = '0';
     expect(await c.save(), isFalse);
     expect(await repo().getAll(), isEmpty);
   });
@@ -95,8 +93,7 @@ void main() {
     expect(c.categoryId.value, foodCategoryId);
     expect(c.noteController.text, 'غدا');
     expect(c.date.value, DateTime(2026, 9, 20));
-    c.backspace();
-    c.pressKey('7');
+    c.amountController.text = '12.7';
     expect(await c.save(), isTrue);
     final all = await repo().getAll();
     expect(all.single.id, existing.id);
@@ -113,7 +110,7 @@ void main() {
 
   test('a second save while the first is still running is ignored', () async {
     final c = await open();
-    c.pressKey('5');
+    c.amountController.text = '5';
     c.selectCategory(foodCategoryId);
     final results = await Future.wait([c.save(), c.save()]);
     expect(results, [true, false]);

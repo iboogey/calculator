@@ -4,7 +4,6 @@ import 'package:flutter/widgets.dart';
 import 'package:get/get.dart';
 import 'package:sqflite/sqflite.dart';
 
-import '../../../core/utils/amount_input.dart';
 import '../../../core/utils/currencies.dart';
 import '../../../core/utils/date_utils.dart';
 import '../../../core/utils/money.dart';
@@ -41,6 +40,9 @@ class TransactionFormController extends GetxController {
   final _allCategories = <TransactionCategory>[].obs;
   final noteController = TextEditingController();
 
+  /// The amount field's text; [amountText] follows it.
+  final amountController = TextEditingController();
+
   TransactionRecord? _editing;
 
   /// Fraction digits of the edited amount, so a 3-decimal amount saved
@@ -52,9 +54,10 @@ class TransactionFormController extends GetxController {
 
   Currency get currency => settings.currency;
 
-  int get _inputDecimals => max(currency.decimals, _editingDecimals);
+  /// Fraction digits the amount field accepts.
+  int get inputDecimals => max(currency.decimals, _editingDecimals);
 
-  int? get amount => Money.parse(amountText.value, decimals: _inputDecimals);
+  int? get amount => Money.parse(amountText.value, decimals: inputDecimals);
 
   bool get canSave =>
       !isSaving.value && amount != null && categoryId.value != null;
@@ -65,6 +68,8 @@ class TransactionFormController extends GetxController {
   @override
   void onInit() {
     super.onInit();
+    amountController.addListener(
+        () => amountText.value = amountController.text);
     ready = _load();
   }
 
@@ -76,9 +81,10 @@ class TransactionFormController extends GetxController {
     _editing = record;
     isEditing.value = true;
     kind.value = record.kind;
-    amountText.value = Money.toEditable(record.amount);
-    final dot = amountText.value.indexOf('.');
-    _editingDecimals = dot == -1 ? 0 : amountText.value.length - dot - 1;
+    final editable = Money.toEditable(record.amount);
+    final dot = editable.indexOf('.');
+    _editingDecimals = dot == -1 ? 0 : editable.length - dot - 1;
+    amountController.text = editable;
     categoryId.value = record.categoryId;
     noteController.text = record.note ?? '';
     date.value = record.date;
@@ -89,11 +95,6 @@ class TransactionFormController extends GetxController {
     kind.value = value;
     categoryId.value = null;
   }
-
-  void pressKey(String key) => amountText.value =
-      AmountInput.append(amountText.value, key, decimals: _inputDecimals);
-
-  void backspace() => amountText.value = AmountInput.backspace(amountText.value);
 
   void selectCategory(int id) => categoryId.value = id;
 
@@ -172,6 +173,7 @@ class TransactionFormController extends GetxController {
   @override
   void onClose() {
     noteController.dispose();
+    amountController.dispose();
     super.onClose();
   }
 }

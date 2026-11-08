@@ -15,7 +15,7 @@ abstract final class Money {
   ///
   /// Returns null for empty, zero, malformed or too precise input.
   static int? parse(String text, {required int decimals}) {
-    final match = _pattern.firstMatch(_toAsciiDigits(text.trim()));
+    final match = _pattern.firstMatch(toAsciiDigits(text.trim()));
     if (match == null) return null;
     final whole = match.group(1)!.replaceFirst(_leadingZeros, '');
     final fraction = match.group(2) ?? '';
@@ -64,7 +64,7 @@ abstract final class Money {
   /// An Arabic keyboard types "١٢٫٥" (Arabic-Indic digits, U+066B decimal
   /// separator) or Persian "۱۲"; turn them into "12.5". Thousands separators
   /// ("," and U+066C) are dropped.
-  static String _toAsciiDigits(String text) {
+  static String toAsciiDigits(String text) {
     final buffer = StringBuffer();
     for (final code in text.runes) {
       if (code >= 0x0660 && code <= 0x0669) {
