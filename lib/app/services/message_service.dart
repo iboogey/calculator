@@ -16,4 +16,15 @@ class MessageService extends GetxService {
       margin: const EdgeInsets.all(16),
     );
   }
+
+  void showInfo(String message) {
+    lastMessage.value = message;
+    if (Get.overlayContext == null) return;
+    Get.snackbar(
+      'تم',
+      message,
+      snackPosition: SnackPosition.BOTTOM,
+      margin: const EdgeInsets.all(16),
+    );
+  }
 }

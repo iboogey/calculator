@@ -1,7 +1,8 @@
 # مصاريفي — Personal Expense Tracker
 
-A personal, fully offline Flutter app for tracking monthly income and expenses.
-Arabic (RTL) interface, no accounts, no internet: all data stays on the device in SQLite.
+A personal Flutter app for tracking monthly income and expenses.
+Arabic (RTL) interface, no accounts: all data stays on the device in SQLite.
+The app works offline; AI features only go online after you add your own key.
 
 ## Features
 - Add, edit and delete income and expenses with a fast keypad and category grid
@@ -19,6 +20,7 @@ Arabic (RTL) interface, no accounts, no internet: all data stays on the device i
 - Daily reminder notification (default 21:00), all scheduled on the device
 - Backup to a JSON file (shared wherever you choose, schema version 2 including debts) and restore from it (v1 files still work)
 - Smart import: bank SMS on the phone are read into a review list (approve or dismiss each one); Android only. Note: the `READ_SMS` permission blocks a future Play Store release
+- AI (optional): pick Gemini, Claude or OpenAI in Settings and add your own API key (kept in the device's secure storage, never in the database or backups); it suggests categories for unknown shops. Only the shop name and city are sent. Test the connection from Settings
 - Settings: month start day, currency, reminder, fixed costs, favorites, backup
 
 See [the design spec](docs/superpowers/specs/2026-10-01-expense-tracker-design.md).

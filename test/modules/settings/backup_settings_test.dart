@@ -22,6 +22,8 @@ void main() {
         files: Get.find(),
         smsInbox: Get.find(),
         smsImport: Get.find(),
+        ai: Get.find(),
+        secrets: Get.find(),
         clock: () => today,
       ));
 

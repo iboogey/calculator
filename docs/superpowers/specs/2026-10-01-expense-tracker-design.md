@@ -20,7 +20,7 @@ A personal, single-user Flutter app to track monthly income and expenses, contro
 ## 2. Hard constraints
 
 - **Local only.** No sign-in, no accounts, no server, no cloud, no analytics. All data lives on the device.
-- **No internet.** The app works fully offline and makes no network calls. The internet permission is removed from the Android manifest in release builds.
+- **No internet.** The app works fully offline and makes no network calls. The internet permission is removed from the Android manifest in release builds. Relaxed by the smart-import spec: AI calls only, only with a user key.
 - **Platforms:** Android and iOS (the project already has both).
 
 ## 3. Decisions made in the interview

@@ -11,6 +11,8 @@ class SettingsBinding extends Bindings {
         backup: Get.find(),
         files: Get.find(),
         smsInbox: Get.find(),
-        smsImport: Get.find()));
+        smsImport: Get.find(),
+        ai: Get.find(),
+        secrets: Get.find()));
   }
 }
