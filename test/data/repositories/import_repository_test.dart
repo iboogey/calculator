@@ -38,6 +38,28 @@ void main() {
   });
   tearDown(() => database.db.close());
 
+  test('addPendingAndAdvance adds items and moves the scan point together',
+      () async {
+    await repo.addPendingAndAdvance([sms(), voice()], DateTime(2026, 11, 5));
+    expect(await repo.getPending(), hasLength(2));
+    expect(await repo.scanPoint(), DateTime(2026, 11, 5));
+  });
+
+  test('addPendingAndAdvance never moves the scan point backwards', () async {
+    await repo.setScanPoint(DateTime(2026, 11, 6));
+    await repo.addPendingAndAdvance([sms()], DateTime(2026, 11, 2));
+    expect(await repo.getPending(), hasLength(1));
+    expect(await repo.scanPoint(), DateTime(2026, 11, 6));
+  });
+
+  test('addPendingAndAdvance with no items still advances, without notifying',
+      () async {
+    final before = database.revision.value;
+    await repo.addPendingAndAdvance([], DateTime(2026, 11, 5));
+    expect(await repo.scanPoint(), DateTime(2026, 11, 5));
+    expect(database.revision.value, before);
+  });
+
   test('scan point is null, can be set, and never moves backwards', () async {
     expect(await repo.scanPoint(), isNull);
     await repo.setScanPoint(DateTime(2026, 11, 5));

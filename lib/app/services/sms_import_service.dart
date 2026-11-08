@@ -40,6 +40,15 @@ class SmsImportService extends GetxService {
     return scan.whenComplete(() => _running = null);
   }
 
+  /// A failing suggester (timeout, no network) means "no suggestion".
+  Future<int?> _suggest(CategorySuggester suggest, ParsedBankSms sms) async {
+    try {
+      return await suggest(sms);
+    } catch (_) {
+      return null;
+    }
+  }
+
   Future<int> _scan(DateTime now) async {
     if (!settings.settings.value.smsImportEnabled ||
         !inbox.isSupported ||
@@ -61,6 +70,7 @@ class SmsImportService extends GetxService {
 
     final incomeOther = byIcon('income_other');
     final other = byIcon('other');
+    final learned = <String, int?>{};
     final suggested = <String, int?>{};
     final items = <PendingItem>[];
     var newest = messages.first.date;
@@ -70,7 +80,9 @@ class SmsImportService extends GetxService {
       final sms = BankSmsParser.parse(message.body);
       if (sms == null) continue;
       final key = learnedKey(sms.type, sms.name);
-      var categoryId = await imports.learnedCategory(key);
+      var categoryId = learned.containsKey(key)
+          ? learned[key]
+          : learned[key] = await imports.learnedCategory(key);
       if (categoryId == null) {
         switch (sms.type) {
           case BankSmsType.cliqReceived:
@@ -82,7 +94,7 @@ class SmsImportService extends GetxService {
             if (suggest != null) {
               categoryId = suggested.containsKey(key)
                   ? suggested[key]
-                  : suggested[key] = await suggest(sms);
+                  : suggested[key] = await _suggest(suggest, sms);
             }
           case BankSmsType.cliqSent:
             break;
@@ -106,8 +118,7 @@ class SmsImportService extends GetxService {
       );
     }
 
-    await imports.addPending(items);
-    await imports.setScanPoint(newest);
+    await imports.addPendingAndAdvance(items, newest);
     return items.length;
   }
 }

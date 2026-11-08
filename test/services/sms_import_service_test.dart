@@ -184,6 +184,32 @@ void main() {
     );
   });
 
+  test('a throwing suggester leaves the item uncategorised, scan goes on',
+      () async {
+    var calls = 0;
+    service.suggester = (_) async {
+      calls++;
+      throw StateError('timeout');
+    };
+    add(smsCard, DateTime(2026, 11, 2, 1));
+    add(smsCard, DateTime(2026, 11, 2, 2));
+    add(smsCliqReceived, DateTime(2026, 11, 2, 3));
+    expect(await service.scan(now), 3);
+    expect(calls, 1);
+    final pending = await imports.getPending();
+    expect(
+        pending
+            .where((p) => p.smsType == BankSmsType.cardPurchase)
+            .map((p) => p.suggestedCategoryId),
+        everyElement(isNull));
+    expect(
+        pending
+            .firstWhere((p) => p.smsType == BankSmsType.cliqReceived)
+            .suggestedCategoryId,
+        await categoryByIcon('income_other'));
+    expect(await imports.scanPoint(), DateTime(2026, 11, 2, 3));
+  });
+
   test('suggester is skipped when a category was learned', () async {
     await Get.find<DatabaseService>().db.insert('learned_categories', {
       'name_key': 'shop:SAMPLE SUPER MARKET',

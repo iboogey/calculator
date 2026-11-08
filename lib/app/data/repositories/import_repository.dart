@@ -45,6 +45,25 @@ class ImportRepository {
     _database.notifyChanged();
   }
 
+  /// Adds [items] and moves the scan point forward to [scanPoint] in one
+  /// transaction, so a scan interrupted half-way never re-imports items.
+  /// An earlier [scanPoint] is ignored, as in [setScanPoint].
+  Future<void> addPendingAndAdvance(
+      List<PendingItem> items, DateTime scanPoint) async {
+    await _database.db.transaction((txn) async {
+      for (final item in items) {
+        await txn.insert(_pending, item.toMap()..remove('id'));
+      }
+      final at = scanPoint.millisecondsSinceEpoch;
+      await txn.rawUpdate(
+        'UPDATE $_state SET last_sms_scan_at = ? WHERE id = 1 '
+        'AND (last_sms_scan_at IS NULL OR last_sms_scan_at < ?)',
+        [at, at],
+      );
+    });
+    if (items.isNotEmpty) _database.notifyChanged();
+  }
+
   Future<List<PendingItem>> getPending() async {
     final rows =
         await _database.db.query(_pending, orderBy: 'occurred_at DESC, id DESC');
