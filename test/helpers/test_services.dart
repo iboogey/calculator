@@ -8,6 +8,7 @@ import 'fake_files.dart';
 import 'fake_notifications.dart';
 import 'fake_secret_store.dart';
 import 'fake_sms_inbox.dart';
+import 'fake_speech.dart';
 
 /// Registers every app service and repository against a fresh in-memory
 /// database and a fake notification system, which it returns.
@@ -26,6 +27,7 @@ Future<FakeNotificationProvider> setUpTestServices({
     files: FakeFileExchangeProvider(),
     smsInbox: FakeSmsInboxProvider(),
     secrets: FakeSecretStore(),
+    speech: FakeSpeechProvider(),
     aiClientFactory: aiClientFactory,
   );
   return notifications;

@@ -5,6 +5,7 @@ import '../data/providers/file_exchange_provider.dart';
 import '../data/providers/notification_provider.dart';
 import '../data/providers/secret_store.dart';
 import '../data/providers/sms_inbox_provider.dart';
+import '../data/providers/speech_provider.dart';
 import '../data/repositories/budget_repository.dart';
 import '../data/repositories/category_repository.dart';
 import '../data/repositories/debt_repository.dart';
@@ -35,6 +36,7 @@ abstract final class InitialBinding {
     FileExchangeProvider? files,
     SmsInboxProvider? smsInbox,
     SecretStore? secrets,
+    SpeechProvider? speech,
     AiClientFactory? aiClientFactory,
   }) async {
     final database = await Get.putAsync(
@@ -97,6 +99,7 @@ abstract final class InitialBinding {
       ),
       permanent: true,
     );
+    Get.put<SpeechProvider>(speech ?? DeviceSpeechProvider(), permanent: true);
     // Register any later import services above this line:
     // StartupService must be created last, because init() runs a first scan.
     await Get.putAsync(
