@@ -30,6 +30,11 @@ Future<void> idle(WidgetTester tester) async {
   await tester.pump(const Duration(seconds: 1));
 }
 
+/// Money text wraps numbers in bidi isolate marks; match without them.
+Finder textIgnoringBidi(String part) => find.byWidgetPredicate((w) =>
+    w is Text &&
+    (w.data ?? '').replaceAll(RegExp('[\\u2066-\\u2069]'), '').contains(part));
+
 void main() {
   testWidgets('opens on Home with an empty month', (tester) async {
     await boot(tester);
@@ -117,6 +122,73 @@ void main() {
     expect(find.text('انضافت: قهوة'), findsOneWidget);
     final all = await tester.runAsync(Get.find<TransactionRepository>().getAll);
     expect(all, hasLength(2));
+  });
+
+  testWidgets('owing the university: add, pay part as expense, Home updates', (tester) async {
+    await boot(tester);
+    await tester.tap(find.text('الديون'));
+    await idle(tester);
+    await tester.tap(find.text('عليّ'));
+    await idle(tester);
+    await tester.tap(find.text('التزام جديد'));
+    await idle(tester);
+    await tester.enterText(find.byKey(const ValueKey('amount-field')), '600');
+    await tester.enterText(find.widgetWithText(TextField, 'لمن أو ما هو؟'), 'رسوم الجامعة');
+    await tester.pump();
+    await tester.tap(find.text('حفظ'));
+    await idle(tester);
+    await idle(tester);
+
+    await tester.tap(find.text('رسوم الجامعة'));
+    await idle(tester);
+    await tester.tap(find.text('جزء منه'));
+    await tester.pump();
+    await tester.enterText(find.byKey(const ValueKey('amount-field')), '300');
+    await tester.pump();
+    await tester.tap(find.text('تسديد'));
+    await idle(tester);
+    await idle(tester);
+
+    await tester.tap(find.byType(BackButton));
+    await idle(tester);
+    await idle(tester);
+
+    expect(find.textContaining('-300.000'), findsWidgets);
+    expect(textIgnoringBidi('المستحق عليّ 300.000'), findsOneWidget);
+  });
+
+  testWidgets('lending to a person never changes the Home balance', (tester) async {
+    await boot(tester);
+    await tester.tap(find.text('الديون'));
+    await idle(tester);
+    await tester.tap(find.text('إضافة شخص'));
+    await idle(tester);
+    await tester.enterText(find.widgetWithText(TextField, 'الاسم'), 'علا');
+    await tester.tap(find.text('إضافة'));
+    await idle(tester);
+    await idle(tester);
+
+    await tester.tap(find.text('علا'));
+    await idle(tester);
+    await tester.tap(find.text('أعطيتُ علا'));
+    await idle(tester);
+    await tester.enterText(find.byKey(const ValueKey('amount-field')), '50');
+    await tester.pump();
+    await tester.tap(find.text('حفظ'));
+    await idle(tester);
+    await idle(tester);
+
+    await tester.tap(find.byType(BackButton));
+    await idle(tester);
+    await tester.tap(find.byType(BackButton));
+    await idle(tester);
+    await idle(tester);
+
+    expect(find.text('المتبقي من الراتب'), findsOneWidget);
+    expect(find.textContaining('-50.000'), findsNothing);
+    await tester.tap(find.text('بعد تسوية الديون'));
+    await idle(tester);
+    expect(textIgnoringBidi('+ لي 50.000'), findsOneWidget);
   });
 
   testWidgets('on an iPhone-sized screen the note and favorite option sit above Save', (tester) async {

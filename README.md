@@ -13,8 +13,11 @@ Arabic (RTL) interface, no accounts, no internet: all data stays on the device i
 - Savings: General Savings plus goals with targets, add/withdraw, "save X a month to reach it",
   a month-end split of what is left, and fixed monthly savings
 - Fixed monthly income, expenses and savings (rent, salary, …) added automatically
+- Debts: two tabs (People: money lent or borrowed with a running balance; Owed by me: obligations such as
+  tuition, with a due date), partial payments that can be recorded as expenses (locked in Transactions),
+  a due reminder on Home and a "after settling debts" preview of what is left (view only)
 - Daily reminder notification (default 21:00), all scheduled on the device
-- Backup to a JSON file (shared wherever you choose) and restore from it
+- Backup to a JSON file (shared wherever you choose, schema version 2 including debts) and restore from it (v1 files still work)
 - Settings: month start day, currency, reminder, fixed costs, favorites, backup
 
 See [the design spec](docs/superpowers/specs/2026-10-01-expense-tracker-design.md).
