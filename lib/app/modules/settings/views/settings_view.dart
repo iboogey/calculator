@@ -291,8 +291,8 @@ class _ApiKeyFieldState extends State<_ApiKeyField> {
   Future<void> _save() async {
     final value = _text.text;
     if (value.trim().isEmpty) return;
-    await widget.controller.saveApiKey(value);
-    if (mounted) _text.clear();
+    final saved = await widget.controller.saveApiKey(value);
+    if (saved && mounted) _text.clear();
   }
 
   @override
@@ -318,7 +318,7 @@ class _ApiKeyFieldState extends State<_ApiKeyField> {
               textDirection: TextDirection.ltr,
               decoration: InputDecoration(
                 labelText: 'مفتاح API',
-                hintText: has ? 'تم حفظ المفتاح' : null,
+                helperText: has ? 'تم حفظ المفتاح' : null,
                 suffixIcon: IconButton(
                   tooltip: _hidden ? 'إظهار' : 'إخفاء',
                   icon: Icon(_hidden

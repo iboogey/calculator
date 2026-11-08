@@ -145,21 +145,24 @@ class SettingsController extends GetxController with WidgetsBindingObserver {
   }
 
   Future<void> setAiProvider(AiProviderKind kind) async {
-    await _update(settings.copyWith(aiProvider: kind));
+    // The model is provider-specific, so a change of provider resets it.
+    await _update(settings.copyWith(aiProvider: kind, clearAiModel: true));
     await _refreshHasApiKey();
   }
 
-  Future<void> saveApiKey(String key) async {
+  /// True when the key was stored.
+  Future<bool> saveApiKey(String key) async {
     final provider = settings.aiProvider;
     final trimmed = key.trim();
-    if (trimmed.isEmpty || provider == AiProviderKind.none) return;
+    if (trimmed.isEmpty || provider == AiProviderKind.none) return false;
     try {
       await secrets.write(apiKeyName(provider), trimmed);
     } catch (_) {
       Get.find<MessageService>().showError('تعذّر حفظ المفتاح');
-      return;
+      return false;
     }
     await _refreshHasApiKey();
+    return true;
   }
 
   Future<void> deleteApiKey() async {

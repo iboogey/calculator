@@ -146,6 +146,14 @@ void main() {
       expect(c.hasApiKey.value, isTrue);
     });
 
+    test('changing provider clears the model', () async {
+      final c = open();
+      await c.setAiProvider(AiProviderKind.gemini);
+      await c.setAiModel('gem-x');
+      await c.setAiProvider(AiProviderKind.claude);
+      expect(Get.find<SettingsService>().settings.value.aiModel, isNull);
+    });
+
     test('model text is saved; empty clears it', () async {
       final c = open();
       await c.setAiModel(' my-model ');
@@ -222,8 +230,11 @@ void main() {
       await tester.pump();
       await tester.pump();
       expect(secrets().values['ai_key_gemini'], 'secret1');
-      expect(find.text('secret1'), findsNothing);
+      final field = tester.widget<TextField>(find.byKey(const Key('apiKeyField')));
+      expect(field.controller!.text, isEmpty);
       expect(find.text('تم حفظ المفتاح'), findsOneWidget);
+      expect(field.decoration!.helperText, 'تم حفظ المفتاح');
+      expect(field.decoration!.hintText, isNull);
     });
   });
 }
