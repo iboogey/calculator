@@ -90,7 +90,9 @@ class DebtRepository {
     final rows = await _database.db.query(
       _people,
       columns: ['id'],
-      where: exceptId == null ? 'trim(name) = ?' : 'trim(name) = ? AND id <> ?',
+      where: exceptId == null
+          ? 'lower(trim(name)) = lower(?)'
+          : 'lower(trim(name)) = lower(?) AND id <> ?',
       whereArgs: exceptId == null ? [trimmed] : [trimmed, exceptId],
       limit: 1,
     );

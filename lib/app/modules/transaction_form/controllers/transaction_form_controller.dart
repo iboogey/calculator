@@ -85,6 +85,7 @@ class TransactionFormController extends GetxController {
     final record = await transactions.getById(editId!);
     if (record == null) return;
     _editing = record;
+    linkedTitle.value = (await debts.linkedExpenses())[editId!];
     isEditing.value = true;
     kind.value = record.kind;
     final editable = Money.toEditable(record.amount);
@@ -94,7 +95,6 @@ class TransactionFormController extends GetxController {
     categoryId.value = record.categoryId;
     noteController.text = record.note ?? '';
     date.value = record.date;
-    linkedTitle.value = (await debts.linkedExpenses())[editId!];
   }
 
   void setKind(TransactionKind value) {

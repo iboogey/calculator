@@ -166,4 +166,30 @@ void main() {
     final c = await open(editId: existing.id);
     expect(c.linkedTitle.value, isNull);
   });
+
+  test('the linked title is known before the form reports editing', () async {
+    final debts = Get.find<DebtRepository>();
+    final o = await debts.addObligation(Obligation(
+        title: 'قسط', amount: 50000, createdAt: DateTime(2026, 10, 1)));
+    await debts.pay(
+        obligationId: o.id!,
+        amount: 10000,
+        date: DateTime(2026, 10, 5),
+        expenseCategoryId: foodCategoryId);
+    final id = (await debts.linkedExpenses()).keys.single;
+    final c = Get.put(TransactionFormController(
+      transactions: Get.find(),
+      categories: Get.find(),
+      settings: Get.find(),
+      debts: Get.find(),
+      editId: id,
+    ));
+    final seen = <String?>[];
+    ever(c.isEditing, (editing) {
+      if (editing) seen.add(c.linkedTitle.value);
+    });
+    await c.ready;
+    expect(c.linkedTitle.value, 'قسط');
+    expect(seen, ['قسط']);
+  });
 }

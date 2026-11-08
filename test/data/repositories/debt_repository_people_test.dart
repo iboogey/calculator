@@ -112,4 +112,13 @@ void main() {
     await repo.deletePerson(a.id!);
     expectBumped();
   });
+
+  test('names are unique ignoring case', () async {
+    await repo.addPerson('Ali');
+    expect(() => repo.addPerson('ali '),
+        throwsA(isA<DuplicateNameException>()));
+    final b = await repo.addPerson('Sam');
+    expect(() => repo.renamePerson(b.id!, 'ALI'),
+        throwsA(isA<DuplicateNameException>()));
+  });
 }

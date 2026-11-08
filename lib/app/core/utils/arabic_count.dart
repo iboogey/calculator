@@ -16,6 +16,18 @@ abstract final class ArabicCount {
     return '$n $many';
   }
 
+  /// "عملية واحدة", "عمليتان", "5 عمليات", "12 عمليةً".
+  static String transactions(int n) => of(n,
+      one: 'عملية واحدة', two: 'عمليتان', few: 'عمليات', many: 'عمليةً');
+
+  /// "هدف واحد", "هدفان", "5 أهداف", "12 هدفًا".
+  static String goals(int n) =>
+      of(n, one: 'هدف واحد', two: 'هدفان', few: 'أهداف', many: 'هدفًا');
+
+  /// Both counts joined, with the conjunction attached to the second.
+  static String restoreSummary(int transactionCount, int goalCount) =>
+      '${transactions(transactionCount)} و${goals(goalCount)}';
+
   /// "التزام واحد", "التزامان", "3 التزامات", "11 التزامًا".
   static String obligations(int n) => of(n,
       one: 'التزام واحد', two: 'التزامان', few: 'التزامات', many: 'التزامًا');

@@ -82,6 +82,13 @@ class DebtsController extends GetxController {
     load();
   }
 
+  /// Sum of what people owe me / what I owe people, without obligations.
+  int get peopleOwedToMe =>
+      people.fold(0, (sum, p) => p.balance > 0 ? sum + p.balance : sum);
+
+  int get peopleIOwe =>
+      people.fold(0, (sum, p) => p.balance < 0 ? sum - p.balance : sum);
+
   Future<void> load() async {
     final balances = await debts.personBalances();
     final peopleList = await debts.getPeople();

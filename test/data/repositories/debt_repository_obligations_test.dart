@@ -2,6 +2,7 @@ import 'package:calculator/app/data/models/obligation.dart';
 import 'package:calculator/app/data/models/transaction_record.dart';
 import 'package:calculator/app/data/repositories/debt_repository.dart';
 import 'package:calculator/app/data/repositories/transaction_repository.dart';
+import 'package:calculator/app/services/database_service.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 import 'package:sqflite/sqflite.dart';
@@ -174,5 +175,25 @@ void main() {
     );
     await repo.pay(obligationId: o.id!, amount: 100000, date: day);
     expect(await repo.linkedExpenses(), {p.transactionId!: 'إيجار'});
+  });
+
+  test('a failing payment insert rolls back the linked expense', () async {
+    final o = await repo.addObligation(obligation('إيجار', 600000));
+    await Get.find<DatabaseService>().db.execute(
+        "CREATE TRIGGER fail_pay BEFORE INSERT ON obligation_payments "
+        "BEGIN SELECT RAISE(ABORT, 'boom'); END");
+    await expectLater(
+      repo.pay(
+          obligationId: o.id!,
+          amount: 400000,
+          date: day,
+          expenseCategoryId: foodCategoryId),
+      throwsA(isA<DatabaseException>()),
+    );
+    expect(await txRepo.getAll(), isEmpty);
+    final rows = await Get.find<DatabaseService>()
+        .db
+        .query('obligation_payments');
+    expect(rows, isEmpty);
   });
 }

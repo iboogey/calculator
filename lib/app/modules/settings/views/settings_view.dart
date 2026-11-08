@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/utils/arabic_count.dart';
 import '../../../core/utils/currencies.dart';
 import '../../../routes/app_routes.dart';
 import '../../../widgets/app_bottom_nav.dart';
@@ -153,7 +154,7 @@ class SettingsView extends GetView<SettingsController> {
         content: Text(
           'ستُحذف بياناتك الحالية وتحلّ محلّها نسخة '
           '${when.day}/${when.month}/${when.year}: '
-          '${summary.transactionCount} عملية و ${summary.goalCount} أهداف.',
+          '${ArabicCount.restoreSummary(summary.transactionCount, summary.goalCount)}.',
         ),
         actions: [
           TextButton(

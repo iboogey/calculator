@@ -1,7 +1,9 @@
 import 'package:calculator/app/app_widget.dart';
 import 'package:calculator/app/data/models/enums.dart';
 import 'package:calculator/app/data/repositories/budget_repository.dart';
+import 'package:calculator/app/modules/home/widgets/balance_card.dart';
 import 'package:calculator/app/modules/home/widgets/debts_card.dart';
+import 'package:calculator/app/widgets/money_text.dart';
 import 'package:calculator/app/data/repositories/transaction_repository.dart';
 import 'package:get/get.dart';
 
@@ -160,6 +162,12 @@ void main() {
     expect(all!.single.amount, 300000);
     expect(all.single.kind, TransactionKind.expense);
     expect(textIgnoringBidi('المستحق عليّ 300.000'), findsOneWidget);
+    expect(
+        find.descendant(
+            of: find.byType(BalanceCard),
+            matching: find.byWidgetPredicate(
+                (w) => w is MoneyText && w.amount == -300000 && w.showSymbol)),
+        findsOneWidget);
   });
 
   testWidgets('lending to a person never changes the Home balance', (tester) async {

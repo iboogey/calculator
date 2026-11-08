@@ -1,4 +1,5 @@
 import 'package:calculator/app/data/models/debt_entry.dart';
+import 'package:calculator/app/data/models/obligation.dart';
 import 'package:calculator/app/data/repositories/debt_repository.dart';
 import 'package:calculator/app/modules/debts/controllers/debts_controller.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -64,5 +65,22 @@ void main() {
     await Get.find<DebtRepository>().addPerson('أحمد');
     await settle();
     expect(c.people.map((p) => p.person.name), ['أحمد']);
+  });
+
+  test('people tiles ignore obligations while totals include them', () async {
+    final repo = Get.find<DebtRepository>();
+    final a = await repo.addPerson('بشير');
+    final b = await repo.addPerson('أحمد');
+    await repo.addEntry(DebtEntry(
+        personId: a.id!, amount: -40000, date: DateTime(2026, 11, 1), createdAt: DateTime(2026, 11, 1)));
+    await repo.addEntry(DebtEntry(
+        personId: b.id!, amount: 7000, date: DateTime(2026, 11, 1), createdAt: DateTime(2026, 11, 1)));
+    await repo.addObligation(Obligation(
+        title: 'رسوم', amount: 600000, createdAt: DateTime(2026, 11, 1)));
+    final c = build();
+    await c.load();
+    expect(c.peopleIOwe, 40000);
+    expect(c.peopleOwedToMe, 7000);
+    expect(c.totals.value.iOwe, 640000);
   });
 }

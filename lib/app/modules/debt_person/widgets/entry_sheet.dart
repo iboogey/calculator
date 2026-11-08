@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
@@ -34,21 +36,30 @@ class _EntrySheetState extends State<EntrySheet> {
   late bool _gave;
   late DateTime _date;
 
+  /// Wide enough for the edited amount even after a switch to a currency
+  /// with fewer decimals.
+  late final int _decimals;
+
   Currency get _currency => Get.find<SettingsService>().currency;
 
   @override
   void initState() {
     super.initState();
     final e = widget.editing;
+    var editedDecimals = 0;
     if (e == null) {
       _gave = widget.gave;
       _date = DateKeys.dateOnly(widget.today);
     } else {
       _gave = e.amount > 0;
       _date = DateKeys.dateOnly(e.date);
-      _amount.text = Money.toEditable(e.amount.abs());
+      final editable = Money.toEditable(e.amount.abs());
+      final dot = editable.indexOf('.');
+      editedDecimals = dot == -1 ? 0 : editable.length - dot - 1;
+      _amount.text = editable;
       _note.text = e.note ?? '';
     }
+    _decimals = max(_currency.decimals, editedDecimals);
     _amount.addListener(() => setState(() {}));
   }
 
@@ -60,7 +71,7 @@ class _EntrySheetState extends State<EntrySheet> {
   }
 
   int? get _parsed {
-    final v = Money.parse(_amount.text, decimals: _currency.decimals);
+    final v = Money.parse(_amount.text, decimals: _decimals);
     return (v == null || v <= 0) ? null : v;
   }
 
@@ -123,7 +134,7 @@ class _EntrySheetState extends State<EntrySheet> {
               AmountField(
                 controller: _amount,
                 currency: _currency,
-                decimals: () => _currency.decimals,
+                decimals: () => _decimals,
                 autofocus: true,
               ),
               const SizedBox(height: 12),

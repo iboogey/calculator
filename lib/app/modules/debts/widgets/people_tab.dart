@@ -14,7 +14,6 @@ class PeopleTab extends GetView<DebtsController> {
   Widget build(BuildContext context) {
     return Obx(() {
       final people = controller.people.toList();
-      final totals = controller.totals.value;
       final currency = controller.currency;
       if (people.isEmpty) {
         return const Center(
@@ -44,7 +43,7 @@ class PeopleTab extends GetView<DebtsController> {
               Expanded(
                 child: _TotalTile(
                     label: 'المستحق لي',
-                    amount: totals.owedToMe,
+                    amount: controller.peopleOwedToMe,
                     color: AppColors.income,
                     currency: currency),
               ),
@@ -52,7 +51,7 @@ class PeopleTab extends GetView<DebtsController> {
               Expanded(
                 child: _TotalTile(
                     label: 'المستحق عليّ',
-                    amount: totals.iOwe,
+                    amount: controller.peopleIOwe,
                     color: AppColors.expense,
                     currency: currency),
               ),
