@@ -39,3 +39,31 @@ class ImportBanner extends StatelessWidget {
     );
   }
 }
+
+/// The voice entry mic shown beside the banner. Without an AI key it looks
+/// disabled but stays tappable, so the tap can explain what is missing.
+class VoiceEntryButton extends StatelessWidget {
+  const VoiceEntryButton({
+    super.key,
+    required this.enabled,
+    required this.onTap,
+  });
+
+  final bool enabled;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return IconButton.filledTonal(
+      tooltip: 'إدخال صوتي',
+      onPressed: onTap,
+      style: IconButton.styleFrom(
+        backgroundColor: enabled ? AppColors.primarySoft : AppColors.divider,
+        foregroundColor:
+            enabled ? AppColors.primary : AppColors.muted.withValues(alpha: 0.5),
+        minimumSize: const Size.square(48),
+      ),
+      icon: const Icon(Icons.mic_none),
+    );
+  }
+}

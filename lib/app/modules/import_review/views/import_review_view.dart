@@ -1,19 +1,45 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../../../core/theme/app_colors.dart';
 import '../../../data/models/pending_item.dart';
 import '../../../widgets/empty_state.dart';
 import '../controllers/import_review_controller.dart';
+import '../controllers/voice_controller.dart';
 import '../widgets/pending_card.dart';
 import '../widgets/pending_edit_sheet.dart';
+import '../widgets/voice_sheet.dart';
 
 class ImportReviewView extends GetView<ImportReviewController> {
   const ImportReviewView({super.key});
 
+  VoiceController get _voice => Get.find<VoiceController>();
+
   @override
   Widget build(BuildContext context) {
+    // Opened from Home's mic: start voice entry once the screen is shown.
+    if (controller.takeVoiceRequest()) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (context.mounted) _startVoice(context);
+      });
+    }
     return Scaffold(
-      appBar: AppBar(title: const Text('مراجعة الحركات')),
+      appBar: AppBar(
+        title: const Text('مراجعة الحركات'),
+        actions: [
+          // Looks disabled without an AI key; tapping then explains why.
+          Obx(() => IconButton(
+                tooltip: 'إدخال صوتي',
+                onPressed: () => _startVoice(context),
+                icon: Icon(
+                  Icons.mic_none,
+                  color: _voice.configured.value
+                      ? null
+                      : AppColors.muted.withValues(alpha: 0.4),
+                ),
+              )),
+        ],
+      ),
       body: SafeArea(
         child: Obx(() {
           final items = controller.items.toList();
@@ -39,6 +65,7 @@ class ImportReviewView extends GetView<ImportReviewController> {
                     ? null
                     : controller.categoriesById[item.suggestedCategoryId!]
                         ?.name,
+                personName: controller.personLabel(item),
                 canApprove: controller.canApproveDirectly(item),
                 duplicateLabel: controller.duplicateLabels[item.id],
                 onApprove: () => controller.canApproveDirectly(item)
@@ -54,6 +81,18 @@ class ImportReviewView extends GetView<ImportReviewController> {
     );
   }
 
+  /// Voice entry; the stored item's edit sheet opens right after (§6.7).
+  Future<void> _startVoice(BuildContext context) async {
+    final voice = _voice;
+    if (!await voice.ensureConfigured() || !context.mounted) return;
+    final item = await showModalBottomSheet<PendingItem>(
+      context: context,
+      isScrollControlled: true,
+      builder: (_) => VoiceSheet(voice: voice),
+    );
+    if (item != null && context.mounted) await _edit(context, item);
+  }
+
   Future<void> _edit(BuildContext context, PendingItem item) {
     return showModalBottomSheet<void>(
       context: context,
@@ -62,11 +101,15 @@ class ImportReviewView extends GetView<ImportReviewController> {
         item: item,
         currency: controller.currency,
         categoriesFor: controller.categoriesFor,
+        kinds: controller.kindsFor(item),
+        people: controller.people.toList(),
         onSave: ({
           required kind,
           required amount,
           required date,
           categoryId,
+          personId,
+          personName,
           note,
         }) =>
             controller.approveEdited(item,
@@ -74,6 +117,8 @@ class ImportReviewView extends GetView<ImportReviewController> {
                 amount: amount,
                 date: date,
                 categoryId: categoryId,
+                personId: personId,
+                personName: personName,
                 note: note),
       ),
     );

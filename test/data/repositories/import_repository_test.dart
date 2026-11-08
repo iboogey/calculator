@@ -80,6 +80,12 @@ void main() {
     expect(await repo.pendingCount(), 2);
   });
 
+  test('addPending returns the stored items with their ids', () async {
+    final saved = await repo.addPending([sms(), voice()]);
+    expect(saved.every((e) => e.id != null), isTrue);
+    expect(await repo.getPending(), unorderedEquals(saved));
+  });
+
   test('addPending with an empty list does not notify', () async {
     final before = database.revision.value;
     await repo.addPending([]);

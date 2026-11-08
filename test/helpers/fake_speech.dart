@@ -6,6 +6,7 @@ class FakeSpeechProvider implements SpeechProvider {
   String? localeId;
   bool stopped = false;
   void Function(String text, bool isFinal)? onResult;
+  void Function()? onDone;
 
   @override
   Future<bool> init() async => available;
@@ -14,9 +15,11 @@ class FakeSpeechProvider implements SpeechProvider {
   Future<void> start({
     required String localeId,
     required void Function(String text, bool isFinal) onResult,
+    void Function()? onDone,
   }) async {
     this.localeId = localeId;
     this.onResult = onResult;
+    this.onDone = onDone;
     stopped = false;
   }
 
@@ -26,4 +29,7 @@ class FakeSpeechProvider implements SpeechProvider {
   /// Delivers recognized text as if the user had spoken it.
   void emit(String text, {bool isFinal = false}) =>
       onResult?.call(text, isFinal);
+
+  /// Ends the session as if the recognizer had stopped by itself.
+  void done() => onDone?.call();
 }

@@ -32,6 +32,7 @@ void main() {
       database: Get.find(),
       debts: Get.find(),
       imports: Get.find(),
+      ai: Get.find(),
       clock: () => today,
     ));
     await c.load();

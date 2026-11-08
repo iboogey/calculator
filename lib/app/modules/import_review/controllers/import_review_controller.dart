@@ -4,11 +4,14 @@ import 'package:sqflite/sqflite.dart';
 import '../../../core/logic/duplicate_check.dart';
 import '../../../core/utils/currencies.dart';
 import '../../../core/utils/date_utils.dart';
+import '../../../data/models/debt_entry.dart';
+import '../../../data/models/debt_person.dart';
 import '../../../data/models/enums.dart';
 import '../../../data/models/pending_item.dart';
 import '../../../data/models/transaction_category.dart';
 import '../../../data/models/transaction_record.dart';
 import '../../../data/repositories/category_repository.dart';
+import '../../../data/repositories/debt_repository.dart';
 import '../../../data/repositories/import_repository.dart';
 import '../../../data/repositories/recurring_repository.dart';
 import '../../../data/repositories/transaction_repository.dart';
@@ -25,7 +28,12 @@ class ImportReviewController extends GetxController {
     required this.transactions,
     required this.settings,
     required this.database,
+    required this.debts,
+    this._openVoice = false,
   });
+
+  /// The route argument that opens the voice sheet right away (Home's mic).
+  static const voiceArgument = 'voice';
 
   final ImportRepository imports;
   final CategoryRepository categories;
@@ -33,6 +41,9 @@ class ImportReviewController extends GetxController {
   final TransactionRepository transactions;
   final SettingsService settings;
   final DatabaseService database;
+  final DebtRepository debts;
+
+  bool _openVoice;
 
   /// Newest first.
   final items = <PendingItem>[].obs;
@@ -42,6 +53,9 @@ class ImportReviewController extends GetxController {
 
   /// "May already be recorded" label, by pending item id.
   final duplicateLabels = <int, String>{}.obs;
+
+  /// Debt people, for the edit sheet's person picker.
+  final people = <DebtPerson>[].obs;
 
   final isSaving = false.obs;
 
@@ -55,6 +69,31 @@ class ImportReviewController extends GetxController {
       .where((c) => c.kind == kind && !c.isArchived)
       .toList();
 
+  /// What [item] may become: SMS items never become debts (spec §6.3).
+  List<PendingKind> kindsFor(PendingItem item) =>
+      item.source == PendingSource.voice
+          ? PendingKind.values
+          : const [PendingKind.expense, PendingKind.income];
+
+  /// The person of a voice debt: their current name when known, otherwise
+  /// the name as spoken.
+  String? personLabel(PendingItem item) {
+    final id = item.personId;
+    if (id != null) {
+      for (final p in people) {
+        if (p.id == id) return p.name;
+      }
+    }
+    return item.personName;
+  }
+
+  /// True once, when the screen was opened to start voice entry.
+  bool takeVoiceRequest() {
+    final open = _openVoice;
+    _openVoice = false;
+    return open;
+  }
+
   @override
   void onInit() {
     super.onInit();
@@ -66,8 +105,10 @@ class ImportReviewController extends GetxController {
     final pending = await imports.getPending();
     final all = await categories.getAll(includeArchived: true);
     final labels = await _duplicateLabels(pending);
+    final allPeople = await debts.getPeople();
     categoriesById.assignAll({for (final c in all) c.id!: c});
     duplicateLabels.assignAll(labels);
+    people.assignAll(allPeople);
     items.assignAll(pending);
   }
 
@@ -113,9 +154,17 @@ class ImportReviewController extends GetxController {
           item.personId != null || item.personName != null,
       };
 
+  static bool _isDebt(PendingKind kind) =>
+      kind == PendingKind.debtGave || kind == PendingKind.debtTook;
+
   /// Approves [item] as suggested. Returns false when it cannot be approved
   /// directly or saving fails (a message is shown).
   Future<bool> approve(PendingItem item) {
+    if (_isDebt(item.kind)) {
+      if (!canApproveDirectly(item)) return Future.value(false);
+      return _saveDebt(item, item.kind, item.amount, item.occurredAt,
+          item.personId, item.personName, item.note);
+    }
     final kind = _transactionKind(item.kind);
     final category = item.suggestedCategoryId;
     if (kind == null || category == null) return Future.value(false);
@@ -134,6 +183,10 @@ class ImportReviewController extends GetxController {
     String? personName,
     String? note,
   }) {
+    if (_isDebt(kind)) {
+      if (!kindsFor(item).contains(kind)) return Future.value(false);
+      return _saveDebt(item, kind, amount, date, personId, personName, note);
+    }
     final transactionKind = _transactionKind(kind);
     if (transactionKind == null || categoryId == null) {
       return Future.value(false);
@@ -165,6 +218,53 @@ class ImportReviewController extends GetxController {
       return false;
     } finally {
       isSaving.value = false;
+    }
+  }
+
+  /// Writes [item] as a debt entry: positive when I gave, negative when I
+  /// took. The person is [personId] if they still exist, otherwise the one
+  /// named [personName], created when new.
+  Future<bool> _saveDebt(PendingItem item, PendingKind kind, int amount,
+      DateTime date, int? personId, String? personName, String? note) async {
+    if (isSaving.value) return false;
+    isSaving.value = true;
+    try {
+      final person = await _resolvePerson(personId, personName);
+      if (person == null) return false;
+      await imports.approveAsDebt(
+        item,
+        DebtEntry(
+          personId: person,
+          amount: kind == PendingKind.debtGave ? amount : -amount,
+          date: DateKeys.dateOnly(date),
+          note: note,
+          createdAt: DateTime.fromMillisecondsSinceEpoch(
+              DateTime.now().millisecondsSinceEpoch),
+        ),
+      );
+      return true;
+    } on DatabaseException {
+      Get.find<MessageService>().showError('تعذّر حفظ العملية، حاول مرة أخرى');
+      return false;
+    } finally {
+      isSaving.value = false;
+    }
+  }
+
+  Future<int?> _resolvePerson(int? personId, String? personName) async {
+    if (personId != null && await debts.getPerson(personId) != null) {
+      return personId;
+    }
+    final name = personName?.trim() ?? '';
+    if (name.isEmpty) return null;
+    try {
+      return (await debts.addPerson(name)).id;
+    } on DuplicateNameException {
+      final key = name.toLowerCase();
+      for (final p in await debts.getPeople()) {
+        if (p.name.trim().toLowerCase() == key) return p.id;
+      }
+      return null;
     }
   }
 

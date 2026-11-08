@@ -26,6 +26,7 @@ void main() {
       database: Get.find(),
       debts: Get.find(),
       imports: Get.find(),
+      ai: Get.find(),
     ));
     await c.load();
     return c;

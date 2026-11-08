@@ -1,15 +1,19 @@
+import 'package:calculator/app/data/models/app_settings.dart';
 import 'package:calculator/app/data/models/debt_entry.dart';
 import 'package:calculator/app/data/models/obligation.dart';
 import 'package:calculator/app/data/models/pending_item.dart';
+import 'package:calculator/app/data/providers/secret_store.dart';
 import 'package:calculator/app/data/repositories/import_repository.dart';
 import 'package:calculator/app/data/repositories/debt_repository.dart';
 import 'package:calculator/app/data/repositories/transaction_repository.dart';
 import 'package:calculator/app/modules/debts/controllers/debts_controller.dart';
 import 'package:calculator/app/modules/home/controllers/home_controller.dart';
+import 'package:calculator/app/services/message_service.dart';
 import 'package:calculator/app/services/settings_service.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 
+import '../../helpers/fake_secret_store.dart';
 import '../../helpers/fixtures.dart';
 import '../../helpers/test_services.dart';
 
@@ -27,6 +31,7 @@ void main() {
       database: Get.find(),
       debts: Get.find(),
       imports: Get.find(),
+      ai: Get.find(),
       clock: () => now,
     ));
     await controller.load();
@@ -139,5 +144,21 @@ void main() {
     await imports.dismiss((await imports.getPending()).first.id!);
     await settle();
     expect(c.pendingCount.value, 1);
+  });
+
+  test('the voice mic needs an AI key and explains without one', () async {
+    final c = await open(DateTime(2026, 11, 9));
+    expect(c.aiConfigured.value, isFalse);
+    await c.openVoice();
+    expect(Get.find<MessageService>().lastMessage.value,
+        'الإدخال الصوتي يحتاج مفتاح ذكاء اصطناعي في الإعدادات');
+
+    await (Get.find<SecretStore>() as FakeSecretStore)
+        .write(apiKeyName(AiProviderKind.gemini), 'k');
+    final settings = Get.find<SettingsService>();
+    await settings.update(
+        settings.settings.value.copyWith(aiProvider: AiProviderKind.gemini));
+    await settle();
+    expect(c.aiConfigured.value, isTrue);
   });
 }

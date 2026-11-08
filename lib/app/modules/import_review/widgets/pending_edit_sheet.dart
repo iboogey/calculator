@@ -4,15 +4,27 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/currencies.dart';
 import '../../../core/utils/date_utils.dart';
 import '../../../core/utils/money.dart';
+import '../../../data/models/debt_person.dart';
 import '../../../data/models/enums.dart';
 import '../../../data/models/pending_item.dart';
 import '../../../data/models/transaction_category.dart';
 import '../../../widgets/amount_field.dart';
 import '../../../widgets/category_grid.dart';
-import '../../../widgets/kind_toggle.dart';
+import 'pending_debt_fields.dart';
 
-/// Edits an imported SMS item, then approves it. [onSave] returns true when
-/// the item was saved, which closes the sheet.
+typedef PendingSave = Future<bool> Function({
+  required PendingKind kind,
+  required int amount,
+  required DateTime date,
+  int? categoryId,
+  int? personId,
+  String? personName,
+  String? note,
+});
+
+/// Edits an imported item, then approves it. [kinds] says what it may become
+/// (debts only for voice items). [onSave] returns true when the item was
+/// saved, which closes the sheet.
 class PendingEditSheet extends StatefulWidget {
   const PendingEditSheet({
     super.key,
@@ -20,27 +32,59 @@ class PendingEditSheet extends StatefulWidget {
     required this.currency,
     required this.categoriesFor,
     required this.onSave,
+    this.kinds = const [PendingKind.expense, PendingKind.income],
+    this.people = const [],
   });
 
   final PendingItem item;
   final Currency currency;
   final List<TransactionCategory> Function(TransactionKind kind) categoriesFor;
-  final Future<bool> Function({
-    required PendingKind kind,
-    required int amount,
-    required DateTime date,
-    int? categoryId,
-    String? note,
-  }) onSave;
+  final List<PendingKind> kinds;
+
+  /// Existing debt people, for the person picker.
+  final List<DebtPerson> people;
+  final PendingSave onSave;
 
   @override
   State<PendingEditSheet> createState() => _PendingEditSheetState();
 }
 
+enum _Mode { expense, income, debt }
+
 class _PendingEditSheetState extends State<PendingEditSheet> {
-  late TransactionKind _kind = widget.item.kind == PendingKind.income
-      ? TransactionKind.income
-      : TransactionKind.expense;
+  late _Mode _mode = switch (widget.item.kind) {
+    PendingKind.expense => _Mode.expense,
+    PendingKind.income => _Mode.income,
+    PendingKind.debtGave || PendingKind.debtTook => _Mode.debt,
+  };
+
+  late final List<_Mode> _modes = [
+    if (widget.kinds.contains(PendingKind.expense)) _Mode.expense,
+    if (widget.kinds.contains(PendingKind.income)) _Mode.income,
+    if (widget.kinds.contains(PendingKind.debtGave) ||
+        widget.kinds.contains(PendingKind.debtTook))
+      _Mode.debt,
+  ];
+
+  TransactionKind get _kind =>
+      _mode == _Mode.income ? TransactionKind.income : TransactionKind.expense;
+
+  late bool _gave = widget.item.kind != PendingKind.debtTook;
+
+  /// The suggested person, matched by id or by trimmed, case-insensitive name.
+  late int? _personId = () {
+    final item = widget.item;
+    if (widget.people.any((p) => p.id == item.personId)) return item.personId;
+    final name = item.personName?.trim().toLowerCase();
+    if (name == null || name.isEmpty) return null;
+    for (final p in widget.people) {
+      if (p.name.trim().toLowerCase() == name) return p.id;
+    }
+    return null;
+  }();
+  late final _newPerson = TextEditingController(
+      text: _personId == null ? widget.item.personName?.trim() ?? '' : '');
+
   late int? _categoryId = () {
     final suggested = widget.item.suggestedCategoryId;
     final visible = widget.categoriesFor(_kind);
@@ -64,18 +108,29 @@ class _PendingEditSheetState extends State<PendingEditSheet> {
   void initState() {
     super.initState();
     _amount.addListener(() => setState(() {}));
+    _newPerson.addListener(() => setState(() {}));
   }
 
   @override
   void dispose() {
     _amount.dispose();
     _note.dispose();
+    _newPerson.dispose();
     super.dispose();
   }
 
-  int? get _parsed => Money.parse(_amount.text, decimals: _decimals);
+  int? get _parsed {
+    final value = Money.parse(_amount.text, decimals: _decimals);
+    return (value == null || value <= 0) ? null : value;
+  }
 
-  bool get _canSave => !_saving && _parsed != null && _categoryId != null;
+  bool get _hasPerson =>
+      _personId != null || _newPerson.text.trim().isNotEmpty;
+
+  bool get _canSave =>
+      !_saving &&
+      _parsed != null &&
+      (_mode == _Mode.debt ? _hasPerson : _categoryId != null);
 
   Future<void> _pickDate() async {
     final picked = await showDatePicker(
@@ -92,13 +147,18 @@ class _PendingEditSheetState extends State<PendingEditSheet> {
     if (!_canSave || amount == null) return;
     setState(() => _saving = true);
     final note = _note.text.trim();
+    final isDebt = _mode == _Mode.debt;
     final saved = await widget.onSave(
-      kind: _kind == TransactionKind.income
-          ? PendingKind.income
-          : PendingKind.expense,
+      kind: switch (_mode) {
+        _Mode.expense => PendingKind.expense,
+        _Mode.income => PendingKind.income,
+        _Mode.debt => _gave ? PendingKind.debtGave : PendingKind.debtTook,
+      },
       amount: amount,
       date: _date,
-      categoryId: _categoryId,
+      categoryId: isDebt ? null : _categoryId,
+      personId: isDebt ? _personId : null,
+      personName: isDebt && _personId == null ? _newPerson.text.trim() : null,
       note: note.isEmpty ? null : note,
     );
     if (!mounted) return;
@@ -121,11 +181,23 @@ class _PendingEditSheetState extends State<PendingEditSheet> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              KindToggle(
-                value: _kind,
-                onChanged: (value) => setState(() {
-                  if (value == _kind) return;
-                  _kind = value;
+              SegmentedButton<_Mode>(
+                showSelectedIcon: false,
+                segments: [
+                  for (final mode in _modes)
+                    ButtonSegment(
+                      value: mode,
+                      label: Text(switch (mode) {
+                        _Mode.expense => 'مصروف',
+                        _Mode.income => 'دخل',
+                        _Mode.debt => 'دين',
+                      }),
+                    ),
+                ],
+                selected: {_mode},
+                onSelectionChanged: (selection) => setState(() {
+                  if (selection.first == _mode) return;
+                  _mode = selection.first;
                   _categoryId = null;
                 }),
               ),
@@ -136,14 +208,29 @@ class _PendingEditSheetState extends State<PendingEditSheet> {
                 decimals: () => _decimals,
               ),
               const SizedBox(height: 12),
-              const Text('التصنيف',
-                  style: TextStyle(color: AppColors.muted, fontSize: 13)),
-              const SizedBox(height: 8),
-              CategoryGrid(
-                categories: widget.categoriesFor(_kind),
-                selectedId: _categoryId,
-                onSelected: (id) => setState(() => _categoryId = id),
-              ),
+              if (_mode == _Mode.debt)
+                PendingDebtFields(
+                  people: widget.people,
+                  selectedPersonId: _personId,
+                  newPerson: _newPerson,
+                  gave: _gave,
+                  onPersonSelected: (id) {
+                    _newPerson.clear();
+                    setState(() => _personId = id);
+                  },
+                  onNewPersonTyped: () => setState(() => _personId = null),
+                  onGaveChanged: (gave) => setState(() => _gave = gave),
+                )
+              else ...[
+                const Text('التصنيف',
+                    style: TextStyle(color: AppColors.muted, fontSize: 13)),
+                const SizedBox(height: 8),
+                CategoryGrid(
+                  categories: widget.categoriesFor(_kind),
+                  selectedId: _categoryId,
+                  onSelected: (id) => setState(() => _categoryId = id),
+                ),
+              ],
               const SizedBox(height: 12),
               Row(
                 children: [

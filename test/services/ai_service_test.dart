@@ -13,28 +13,14 @@ import 'package:calculator/app/services/sms_import_service.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 
+import '../helpers/fake_ai_client.dart';
 import '../helpers/fake_secret_store.dart';
 import '../helpers/fake_sms_inbox.dart';
 import '../helpers/sms_fixtures.dart';
 import '../helpers/test_services.dart';
 
-class _FakeClient implements AiClient {
-  _FakeClient(this.reply);
-
-  Object reply; // String or AiException
-  final prompts = <String>[];
-
-  @override
-  Future<String> complete(String prompt, {required Duration timeout}) async {
-    prompts.add(prompt);
-    final r = reply;
-    if (r is AiException) throw r;
-    return r as String;
-  }
-}
-
 void main() {
-  late _FakeClient client;
+  late FakeAiClient client;
   late AiService ai;
   late int foodId;
   final card = const ParsedBankSms(
@@ -56,7 +42,7 @@ void main() {
   }
 
   setUp(() async {
-    client = _FakeClient('{"category":"طعام"}');
+    client = FakeAiClient('{"category":"طعام"}');
     await setUpTestServices(aiClientFactory: (_, _, _) => client);
     ai = Get.find<AiService>();
     final all = await Get.find<CategoryRepository>()

@@ -35,14 +35,19 @@ class ImportRepository {
 
   // ---- Pending items ----
 
-  Future<void> addPending(List<PendingItem> items) async {
-    if (items.isEmpty) return;
-    await _database.db.transaction((txn) async {
+  /// Stores [items]; returns them with their new ids.
+  Future<List<PendingItem>> addPending(List<PendingItem> items) async {
+    if (items.isEmpty) return const [];
+    final saved = await _database.db.transaction((txn) async {
+      final saved = <PendingItem>[];
       for (final item in items) {
-        await txn.insert(_pending, item.toMap()..remove('id'));
+        final id = await txn.insert(_pending, item.toMap()..remove('id'));
+        saved.add(item.withId(id));
       }
+      return saved;
     });
     _database.notifyChanged();
+    return saved;
   }
 
   /// Adds [items] and moves the scan point forward to [scanPoint] in one

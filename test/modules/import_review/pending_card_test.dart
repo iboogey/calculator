@@ -104,4 +104,47 @@ void main() {
     await tester.tap(find.text('اعتماد'));
     expect(taps, 1);
   });
+
+  Future<void> pumpVoice(WidgetTester tester, PendingItem item,
+          {String? personName}) =>
+      tester.pumpWidget(MaterialApp(
+        home: Scaffold(
+          body: PendingCard(
+            item: item,
+            currency: Currencies.jod,
+            categoryName: null,
+            personName: personName,
+            canApprove: true,
+            today: DateTime(2026, 11, 9),
+            onApprove: () {},
+            onEdit: () {},
+            onDismiss: () {},
+          ),
+        ),
+      ));
+
+  final voiceDebt = PendingItem(
+    id: 3,
+    source: PendingSource.voice,
+    kind: PendingKind.debtGave,
+    amount: 20000,
+    occurredAt: DateTime(2026, 11, 9, 8, 0),
+    personName: 'سامي',
+    note: 'سلفة',
+    createdAt: DateTime(2026, 11, 9),
+  );
+
+  testWidgets('a voice debt shows its person instead of a category',
+      (tester) async {
+    await pumpVoice(tester, voiceDebt, personName: 'سامي');
+    expect(find.text('دين: سامي'), findsOneWidget);
+    expect(find.text('بلا تصنيف'), findsNothing);
+    expect(find.text('سلفة'), findsOneWidget);
+  });
+
+  testWidgets('a voice debt without a person says so', (tester) async {
+    await pumpVoice(tester, voiceDebt);
+    expect(find.text('دين'), findsOneWidget);
+    expect(find.text('بلا تصنيف'), findsNothing);
+  });
 }

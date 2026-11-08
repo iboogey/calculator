@@ -17,6 +17,7 @@ class PendingCard extends StatelessWidget {
     required this.onApprove,
     required this.onEdit,
     required this.onDismiss,
+    this.personName,
     this.duplicateLabel,
     this.today,
   });
@@ -26,6 +27,9 @@ class PendingCard extends StatelessWidget {
 
   /// Null when the item has no category yet.
   final String? categoryName;
+
+  /// The person of a voice debt, when known.
+  final String? personName;
 
   /// Whether one tap may approve; otherwise approving opens the editor.
   final bool canApprove;
@@ -45,9 +49,14 @@ class PendingCard extends StatelessWidget {
     return '$day · $hh:$mm';
   }
 
+  bool get _isDebt =>
+      item.kind == PendingKind.debtGave || item.kind == PendingKind.debtTook;
+
   @override
   Widget build(BuildContext context) {
-    final isIncome = item.kind == PendingKind.income;
+    // Money coming in: income, or a debt where I took money.
+    final isIncome =
+        item.kind == PendingKind.income || item.kind == PendingKind.debtTook;
     final place = item.city;
     return Card(
       margin: EdgeInsets.zero,
@@ -80,7 +89,7 @@ class PendingCard extends StatelessWidget {
             Row(
               children: [
                 Expanded(
-                  child: Text(item.name ?? '—',
+                  child: Text(item.name ?? item.note ?? '—',
                       style: const TextStyle(
                           fontSize: 16, fontWeight: FontWeight.w700)),
                 ),
@@ -102,13 +111,22 @@ class PendingCard extends StatelessWidget {
                   style: const TextStyle(color: AppColors.muted, fontSize: 13)),
             ],
             const SizedBox(height: 8),
-            Chip(
-              label: Text(categoryName ?? 'بلا تصنيف'),
-              visualDensity: VisualDensity.compact,
-              backgroundColor: categoryName == null
-                  ? AppColors.warningSoft
-                  : AppColors.primarySoft,
-            ),
+            if (_isDebt)
+              Chip(
+                label: Text(personName == null ? 'دين' : 'دين: $personName'),
+                visualDensity: VisualDensity.compact,
+                backgroundColor: personName == null
+                    ? AppColors.warningSoft
+                    : AppColors.primarySoft,
+              )
+            else
+              Chip(
+                label: Text(categoryName ?? 'بلا تصنيف'),
+                visualDensity: VisualDensity.compact,
+                backgroundColor: categoryName == null
+                    ? AppColors.warningSoft
+                    : AppColors.primarySoft,
+              ),
             if (duplicateLabel != null) ...[
               const SizedBox(height: 6),
               Row(

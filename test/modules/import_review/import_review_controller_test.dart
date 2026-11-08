@@ -1,6 +1,7 @@
 import 'package:calculator/app/data/models/enums.dart';
 import 'package:calculator/app/data/models/pending_item.dart';
 import 'package:calculator/app/data/models/recurring_rule.dart';
+import 'package:calculator/app/data/repositories/debt_repository.dart';
 import 'package:calculator/app/data/repositories/import_repository.dart';
 import 'package:calculator/app/data/repositories/recurring_repository.dart';
 import 'package:calculator/app/data/repositories/transaction_repository.dart';
@@ -34,6 +35,24 @@ PendingItem _item({
       createdAt: at,
     );
 
+PendingItem _voiceDebt({
+  required PendingKind kind,
+  required int amount,
+  int? personId,
+  String? personName,
+  String? note,
+}) =>
+    PendingItem(
+      source: PendingSource.voice,
+      kind: kind,
+      amount: amount,
+      occurredAt: DateTime(2026, 11, 4, 12),
+      personId: personId,
+      personName: personName,
+      note: note,
+      createdAt: DateTime(2026, 11, 4, 12),
+    );
+
 void main() {
   setUp(setUpTestServices);
 
@@ -47,6 +66,7 @@ void main() {
       transactions: Get.find(),
       settings: Get.find(),
       database: Get.find(),
+      debts: Get.find(),
     ));
     await c.load();
     return c;
@@ -181,5 +201,162 @@ void main() {
     expect(Get.find<MessageService>().lastMessage.value,
         'تعذّر حفظ العملية، حاول مرة أخرى');
     expect(c.isSaving.value, isFalse);
+  });
+
+  group('voice debts', () {
+    DebtRepository debts() => Get.find<DebtRepository>();
+
+    test('approve with an existing person writes a positive entry for them',
+        () async {
+      final sami = await debts().addPerson('سامي');
+      await imports().addPending([
+        _voiceDebt(
+            kind: PendingKind.debtGave,
+            amount: 20000,
+            personId: sami.id,
+            personName: 'سامي',
+            note: 'سلفة'),
+      ]);
+      final c = await open();
+      expect(c.canApproveDirectly(c.items.single), isTrue);
+      expect(await c.approve(c.items.single), isTrue);
+      final entry = (await debts().getEntries(sami.id!)).single;
+      expect(entry.amount, 20000);
+      expect(entry.date, DateTime(2026, 11, 4));
+      expect(entry.note, 'سلفة');
+      expect(await debts().getPeople(), hasLength(1));
+      expect(await imports().getPending(), isEmpty);
+      expect(await Get.find<TransactionRepository>().getAll(), isEmpty);
+    });
+
+    test('approve with an unknown person creates them and a negative entry',
+        () async {
+      await imports().addPending([
+        _voiceDebt(kind: PendingKind.debtTook, amount: 10000, personName: 'رنا'),
+      ]);
+      final c = await open();
+      expect(await c.approve(c.items.single), isTrue);
+      final rana = (await debts().getPeople()).single;
+      expect(rana.name, 'رنا');
+      expect((await debts().getEntries(rana.id!)).single.amount, -10000);
+      expect(await imports().getPending(), isEmpty);
+    });
+
+    test('a name that already exists reuses that person', () async {
+      final sami = await debts().addPerson('Sami');
+      await imports().addPending([
+        _voiceDebt(kind: PendingKind.debtGave, amount: 5000, personName: ' sami'),
+      ]);
+      final c = await open();
+      expect(await c.approve(c.items.single), isTrue);
+      expect(await debts().getPeople(), hasLength(1));
+      expect((await debts().getEntries(sami.id!)).single.amount, 5000);
+    });
+
+    test('a person deleted while pending falls back to the spoken name',
+        () async {
+      final sami = await debts().addPerson('سامي');
+      await imports().addPending([
+        _voiceDebt(
+            kind: PendingKind.debtGave,
+            amount: 5000,
+            personId: sami.id,
+            personName: 'سامي'),
+      ]);
+      await debts().deletePerson(sami.id!);
+      final c = await open();
+      expect(await c.approve(c.items.single), isTrue);
+      final again = (await debts().getPeople()).single;
+      expect(again.id, isNot(sami.id));
+      expect((await debts().getEntries(again.id!)).single.amount, 5000);
+    });
+
+    test('a debt without a person cannot be approved directly', () async {
+      await imports().addPending(
+          [_voiceDebt(kind: PendingKind.debtGave, amount: 5000)]);
+      final c = await open();
+      expect(c.canApproveDirectly(c.items.single), isFalse);
+      expect(await c.approve(c.items.single), isFalse);
+      expect(await imports().getPending(), hasLength(1));
+    });
+
+    test('approveEdited saves the chosen person, direction and values',
+        () async {
+      final sami = await debts().addPerson('سامي');
+      await imports().addPending([
+        _voiceDebt(kind: PendingKind.debtGave, amount: 5000),
+      ]);
+      final c = await open();
+      expect(
+          await c.approveEdited(c.items.single,
+              kind: PendingKind.debtTook,
+              amount: 7000,
+              date: DateTime(2026, 11, 6, 9),
+              personId: sami.id,
+              note: 'مطعم'),
+          isTrue);
+      final entry = (await debts().getEntries(sami.id!)).single;
+      expect(entry.amount, -7000);
+      expect(entry.date, DateTime(2026, 11, 6));
+      expect(entry.note, 'مطعم');
+    });
+
+    test('approveEdited with a new name creates the person', () async {
+      await imports().addPending([
+        _voiceDebt(kind: PendingKind.debtGave, amount: 5000),
+      ]);
+      final c = await open();
+      expect(
+          await c.approveEdited(c.items.single,
+              kind: PendingKind.debtGave,
+              amount: 5000,
+              date: DateTime(2026, 11, 4),
+              personName: 'هدى'),
+          isTrue);
+      final huda = (await debts().getPeople()).single;
+      expect(huda.name, 'هدى');
+      expect((await debts().getEntries(huda.id!)).single.amount, 5000);
+    });
+
+    test('an SMS item can never become a debt', () async {
+      final sami = await debts().addPerson('سامي');
+      await imports().addPending([_item(amount: 3500, at: DateTime(2026, 11, 3))]);
+      final c = await open();
+      expect(
+          await c.approveEdited(c.items.single,
+              kind: PendingKind.debtGave,
+              amount: 3500,
+              date: DateTime(2026, 11, 3),
+              personId: sami.id),
+          isFalse);
+      expect(await debts().getEntries(sami.id!), isEmpty);
+      expect(await imports().getPending(), hasLength(1));
+    });
+
+    test('kindsFor offers debts only for voice items', () async {
+      final c = await open();
+      final sms = _item(amount: 1, at: DateTime(2026, 11, 3));
+      final voice = _voiceDebt(kind: PendingKind.expense, amount: 1);
+      expect(c.kindsFor(sms), [PendingKind.expense, PendingKind.income]);
+      expect(c.kindsFor(voice), containsAll([
+        PendingKind.expense,
+        PendingKind.income,
+        PendingKind.debtGave,
+        PendingKind.debtTook,
+      ]));
+    });
+
+    test('load lists the debt people and labels a voice debt', () async {
+      final sami = await debts().addPerson('سامي');
+      await imports().addPending([
+        _voiceDebt(kind: PendingKind.debtGave, amount: 1, personId: sami.id),
+        _voiceDebt(kind: PendingKind.debtTook, amount: 2, personName: 'رنا'),
+      ]);
+      final c = await open();
+      expect(c.people.map((p) => p.name), ['سامي']);
+      final byAmount = {for (final i in c.items) i.amount: i};
+      expect(c.personLabel(byAmount[1]!), 'سامي');
+      expect(c.personLabel(byAmount[2]!), 'رنا');
+    });
   });
 }
