@@ -18,6 +18,7 @@ Arabic (RTL) interface, no accounts, no internet: all data stays on the device i
   a due reminder on Home and a "after settling debts" preview of what is left (view only)
 - Daily reminder notification (default 21:00), all scheduled on the device
 - Backup to a JSON file (shared wherever you choose, schema version 2 including debts) and restore from it (v1 files still work)
+- Smart import: bank SMS on the phone are read into a review list (approve or dismiss each one); Android only. Note: the `READ_SMS` permission blocks a future Play Store release
 - Settings: month start day, currency, reminder, fixed costs, favorites, backup
 
 See [the design spec](docs/superpowers/specs/2026-10-01-expense-tracker-design.md).

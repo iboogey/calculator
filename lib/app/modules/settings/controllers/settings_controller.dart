@@ -1,3 +1,4 @@
+import 'package:flutter/widgets.dart';
 import 'package:get/get.dart';
 import 'package:sqflite/sqflite.dart';
 
@@ -6,18 +7,22 @@ import '../../../core/utils/currencies.dart';
 import '../../../core/utils/date_utils.dart';
 import '../../../data/models/app_settings.dart';
 import '../../../data/providers/file_exchange_provider.dart';
+import '../../../data/providers/sms_inbox_provider.dart';
 import '../../../routes/app_routes.dart';
 import '../../../services/backup_service.dart';
 import '../../../services/message_service.dart';
 import '../../../services/notification_service.dart';
 import '../../../services/settings_service.dart';
+import '../../../services/sms_import_service.dart';
 
-class SettingsController extends GetxController {
+class SettingsController extends GetxController with WidgetsBindingObserver {
   SettingsController({
     required this.settingsService,
     required this.notifications,
     required this.backup,
     required this.files,
+    required this.smsInbox,
+    required this.smsImport,
     DateTime Function()? clock,
   }) : _clock = clock ?? DateTime.now;
 
@@ -25,9 +30,71 @@ class SettingsController extends GetxController {
   final NotificationService notifications;
   final BackupService backup;
   final FileExchangeProvider files;
+  final SmsInboxProvider smsInbox;
+  final SmsImportService smsImport;
   final DateTime Function() _clock;
 
   static const backupReminderDays = 30;
+
+  final _smsPermission = false.obs;
+
+  bool get smsSupported => smsInbox.isSupported;
+
+  /// The setting is on and the Android permission is still granted.
+  bool get smsImportOn =>
+      settings.smsImportEnabled && _smsPermission.value;
+
+  @override
+  void onInit() {
+    super.onInit();
+    WidgetsBinding.instance.addObserver(this);
+    _refreshSmsPermission();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) _refreshSmsPermission();
+  }
+
+  @override
+  void onClose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.onClose();
+  }
+
+  Future<void> _refreshSmsPermission() async {
+    if (!smsSupported) return;
+    try {
+      _smsPermission.value = await smsInbox.hasPermission();
+    } catch (_) {
+      _smsPermission.value = false;
+    }
+  }
+
+  Future<void> setSmsImport(bool enabled) async {
+    if (!enabled) {
+      await _update(settings.copyWith(smsImportEnabled: false));
+      return;
+    }
+    bool granted;
+    try {
+      granted = await smsInbox.requestPermission();
+    } catch (_) {
+      granted = false;
+    }
+    _smsPermission.value = granted;
+    if (!granted) {
+      Get.find<MessageService>()
+          .showError('لا يمكن قراءة رسائل البنك دون إذن الرسائل');
+      return;
+    }
+    await _update(settings.copyWith(smsImportEnabled: true));
+    try {
+      await smsImport.scan(_clock());
+    } catch (_) {
+      // The next start or resume scans again.
+    }
+  }
 
   /// Reads the reactive value, so an `Obx` that uses it rebuilds on change.
   AppSettings get settings => settingsService.settings.value;

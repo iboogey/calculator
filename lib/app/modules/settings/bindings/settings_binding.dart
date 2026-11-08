@@ -9,6 +9,8 @@ class SettingsBinding extends Bindings {
         settingsService: Get.find(),
         notifications: Get.find(),
         backup: Get.find(),
-        files: Get.find()));
+        files: Get.find(),
+        smsInbox: Get.find(),
+        smsImport: Get.find()));
   }
 }

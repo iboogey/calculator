@@ -91,6 +91,17 @@ class SettingsView extends GetView<SettingsController> {
                 ],
               ),
             ),
+            if (controller.smsSupported) ...[
+              const _SectionTitle('الاستيراد الذكي'),
+              Card(
+                child: SwitchListTile(
+                  title: const Text('استيراد رسائل البنك'),
+                  subtitle: const Text('تُقرأ الرسائل على الهاتف فقط ولا تُحفظ'),
+                  value: controller.smsImportOn,
+                  onChanged: controller.setSmsImport,
+                ),
+              ),
+            ],
             const _SectionTitle('إدارة'),
             Card(
               child: Column(

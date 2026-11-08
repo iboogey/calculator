@@ -20,6 +20,8 @@ void main() {
         notifications: Get.find(),
         backup: Get.find(),
         files: Get.find(),
+        smsInbox: Get.find(),
+        smsImport: Get.find(),
         clock: () => today,
       ));
 
