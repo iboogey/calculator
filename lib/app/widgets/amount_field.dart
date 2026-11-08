@@ -14,6 +14,8 @@ class AmountField extends StatelessWidget {
     required this.currency,
     required this.decimals,
     this.autofocus = false,
+    this.focusNode,
+    this.label = 'المبلغ',
   });
 
   final TextEditingController controller;
@@ -22,6 +24,8 @@ class AmountField extends StatelessWidget {
   /// Fraction digits allowed while typing; read on every keystroke.
   final int Function() decimals;
   final bool autofocus;
+  final FocusNode? focusNode;
+  final String label;
 
   static const _style = TextStyle(
       fontSize: 36, fontWeight: FontWeight.w700, color: AppColors.ink);
@@ -30,7 +34,7 @@ class AmountField extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        const Text('المبلغ', style: TextStyle(color: AppColors.muted, fontSize: 13)),
+        Text(label, style: const TextStyle(color: AppColors.muted, fontSize: 13)),
         const SizedBox(height: 4),
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -43,6 +47,7 @@ class AmountField extends StatelessWidget {
                 child: TextField(
                   key: const ValueKey('amount-field'),
                   controller: controller,
+                  focusNode: focusNode,
                   autofocus: autofocus,
                   keyboardType:
                       const TextInputType.numberWithOptions(decimal: true),

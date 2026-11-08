@@ -14,6 +14,8 @@ import '../modules/home/bindings/home_binding.dart';
 import '../modules/home/views/home_view.dart';
 import '../modules/month_end/bindings/month_end_binding.dart';
 import '../modules/month_end/views/month_end_view.dart';
+import '../modules/obligation_form/bindings/obligation_form_binding.dart';
+import '../modules/obligation_form/views/obligation_form_view.dart';
 import '../modules/recurring/bindings/recurring_binding.dart';
 import '../modules/recurring/views/recurring_view.dart';
 import '../modules/recurring_form/bindings/recurring_form_binding.dart';
@@ -101,6 +103,12 @@ abstract final class AppPages {
       name: Routes.debtPerson,
       page: () => const DebtPersonView(),
       binding: DebtPersonBinding(),
+    ),
+    GetPage(
+      name: Routes.obligationForm,
+      page: () => const ObligationFormView(),
+      binding: ObligationFormBinding(),
+      fullscreenDialog: true,
     ),
     GetPage(
       name: Routes.monthEnd,

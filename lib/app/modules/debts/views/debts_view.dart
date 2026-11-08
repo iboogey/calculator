@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 
 import '../controllers/debts_controller.dart';
 import '../widgets/add_person_dialog.dart';
+import '../widgets/obligations_tab.dart';
 import '../widgets/people_tab.dart';
 
 class DebtsView extends GetView<DebtsController> {
@@ -37,7 +38,7 @@ class DebtsView extends GetView<DebtsController> {
           Expanded(
             child: Obx(() => controller.tab.value == DebtsTab.people
                 ? const PeopleTab()
-                : const Center(child: Text('الالتزامات'))),
+                : const ObligationsTab()),
           ),
         ],
       ),
@@ -47,7 +48,11 @@ class DebtsView extends GetView<DebtsController> {
               icon: const Icon(Icons.add),
               label: const Text('إضافة شخص'),
             )
-          : const SizedBox.shrink()),
+          : FloatingActionButton.extended(
+              onPressed: controller.openNewObligation,
+              icon: const Icon(Icons.add),
+              label: const Text('التزام جديد'),
+            )),
     );
   }
 }
