@@ -48,4 +48,21 @@ abstract final class ArabicDates {
     if (day == DateTime(now.year, now.month, now.day - 1)) return 'أمس';
     return dayMonth(day);
   }
+
+  /// "اليوم", "خلال يومين", "متأخر منذ 5 أيام"... Negative means overdue.
+  static String dueLabel(int daysLeft) {
+    if (daysLeft == 0) return 'اليوم';
+    final n = daysLeft.abs();
+    final String span;
+    if (n == 1) {
+      span = 'يوم';
+    } else if (n == 2) {
+      span = 'يومين';
+    } else if (n <= 10) {
+      span = '$n أيام';
+    } else {
+      span = '$n يومًا';
+    }
+    return daysLeft > 0 ? 'خلال $span' : 'متأخر منذ $span';
+  }
 }
