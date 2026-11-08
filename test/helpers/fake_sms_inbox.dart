@@ -6,6 +6,7 @@ class FakeSmsInboxProvider implements SmsInboxProvider {
   bool granted = true;
   final messages = <SmsMessage>[];
   int readCount = 0;
+  bool throwOnRead = false;
 
   @override
   bool get isSupported => supported;
@@ -19,6 +20,8 @@ class FakeSmsInboxProvider implements SmsInboxProvider {
   @override
   Future<List<SmsMessage>> readInbox({required DateTime after}) async {
     readCount++;
-    return messages.where((m) => m.date.isAfter(after)).toList();
+    if (throwOnRead) throw StateError('inbox failure');
+    return messages.where((m) => m.date.isAfter(after)).toList()
+      ..sort((a, b) => a.date.compareTo(b.date));
   }
 }

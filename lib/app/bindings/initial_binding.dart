@@ -3,6 +3,7 @@ import 'package:sqflite/sqflite.dart';
 
 import '../data/providers/file_exchange_provider.dart';
 import '../data/providers/notification_provider.dart';
+import '../data/providers/sms_inbox_provider.dart';
 import '../data/repositories/budget_repository.dart';
 import '../data/repositories/category_repository.dart';
 import '../data/repositories/debt_repository.dart';
@@ -18,6 +19,7 @@ import '../services/database_service.dart';
 import '../services/message_service.dart';
 import '../services/notification_service.dart';
 import '../services/settings_service.dart';
+import '../services/sms_import_service.dart';
 import '../services/startup_service.dart';
 
 /// Registers the app-wide services and repositories before the first screen.
@@ -29,6 +31,7 @@ abstract final class InitialBinding {
     String? path,
     NotificationProvider? notifications,
     FileExchangeProvider? files,
+    SmsInboxProvider? smsInbox,
   }) async {
     final database = await Get.putAsync(
         () => DatabaseService(factory: factory, path: path).init(),
@@ -40,7 +43,7 @@ abstract final class InitialBinding {
         Get.put(TransactionRepository(database), permanent: true);
     Get.put(SavingsRepository(database), permanent: true);
     Get.put(DebtRepository(database), permanent: true);
-    Get.put(ImportRepository(database), permanent: true);
+    final imports = Get.put(ImportRepository(database), permanent: true);
     final budgets = Get.put(BudgetRepository(database), permanent: true);
     final recurring = Get.put(RecurringRepository(database), permanent: true);
     Get.put(TemplateRepository(database), permanent: true);
@@ -65,8 +68,24 @@ abstract final class InitialBinding {
       ),
       permanent: true,
     );
+    final inbox = Get.put<SmsInboxProvider>(
+        smsInbox ?? DeviceSmsInboxProvider(),
+        permanent: true);
+    final smsImport = Get.put(
+      SmsImportService(
+        inbox: inbox,
+        imports: imports,
+        categories: categories,
+        settings: settings,
+      ),
+      permanent: true,
+    );
+    // Register any later import services (e.g. AI) above this line:
+    // StartupService must be created last, because init() runs a first scan.
     await Get.putAsync(
-        () => StartupService(recurring: recurring, database: database).init(),
+        () => StartupService(
+                recurring: recurring, database: database, smsImport: smsImport)
+            .init(),
         permanent: true);
     final fileExchange = Get.put<FileExchangeProvider>(
         files ?? DeviceFileExchangeProvider(),

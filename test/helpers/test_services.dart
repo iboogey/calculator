@@ -5,6 +5,7 @@ import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 import 'fake_files.dart';
 import 'fake_notifications.dart';
+import 'fake_sms_inbox.dart';
 
 /// Registers every app service and repository against a fresh in-memory
 /// database and a fake notification system, which it returns.
@@ -19,6 +20,7 @@ Future<FakeNotificationProvider> setUpTestServices() async {
     path: inMemoryDatabasePath,
     notifications: notifications,
     files: FakeFileExchangeProvider(),
+    smsInbox: FakeSmsInboxProvider(),
   );
   return notifications;
 }
