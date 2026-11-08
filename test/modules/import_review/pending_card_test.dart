@@ -11,7 +11,7 @@ final _item = PendingItem(
   source: PendingSource.sms,
   kind: PendingKind.expense,
   amount: 3500,
-  occurredAt: DateTime(2026, 11, 3),
+  occurredAt: DateTime(2026, 11, 3, 14, 5),
   smsType: BankSmsType.cardPurchase,
   name: 'SAMPLE SUPER MARKET',
   city: 'AMMAN',
@@ -34,6 +34,7 @@ Future<void> _pump(
           categoryName: categoryName,
           canApprove: canApprove,
           duplicateLabel: duplicate,
+          today: DateTime(2026, 11, 9),
           onApprove: onApprove ?? () {},
           onEdit: () {},
           onDismiss: () {},
@@ -56,6 +57,9 @@ void main() {
     expect(find.text('تعديل'), findsOneWidget);
     expect(find.text('تجاهل'), findsOneWidget);
     expect(find.text('اعتماد الكل'), findsNothing);
+    expect(find.text('3 تشرين الثاني · 14:05'), findsOneWidget);
+    expect(find.byIcon(Icons.sms_outlined), findsOneWidget);
+    expect(find.byIcon(Icons.mic_none), findsNothing);
   });
 
   testWidgets('shows "بلا تصنيف" and no warning without them', (tester) async {
@@ -65,7 +69,33 @@ void main() {
     expect(
         tester.widget<FilledButton>(find.widgetWithText(FilledButton, 'اعتماد'))
             .onPressed,
-        isNull);
+        isNotNull);
+  });
+
+  testWidgets('a voice item shows the mic icon', (tester) async {
+    await tester.pumpWidget(MaterialApp(
+      home: Scaffold(
+        body: PendingCard(
+          item: PendingItem(
+            id: 2,
+            source: PendingSource.voice,
+            kind: PendingKind.expense,
+            amount: 1000,
+            occurredAt: DateTime(2026, 11, 9, 8, 0),
+            createdAt: DateTime(2026, 11, 9),
+          ),
+          currency: Currencies.jod,
+          categoryName: null,
+          canApprove: false,
+          today: DateTime(2026, 11, 9),
+          onApprove: () {},
+          onEdit: () {},
+          onDismiss: () {},
+        ),
+      ),
+    ));
+    expect(find.byIcon(Icons.mic_none), findsOneWidget);
+    expect(find.text('اليوم · 08:00'), findsOneWidget);
   });
 
   testWidgets('approve button calls back when enabled', (tester) async {

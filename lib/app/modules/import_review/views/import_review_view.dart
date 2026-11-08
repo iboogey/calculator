@@ -35,11 +35,15 @@ class ImportReviewView extends GetView<ImportReviewController> {
                 key: ValueKey(item.id),
                 item: item,
                 currency: controller.currency,
-                categoryName:
-                    controller.categoriesById[item.suggestedCategoryId]?.name,
+                categoryName: item.suggestedCategoryId == null
+                    ? null
+                    : controller.categoriesById[item.suggestedCategoryId!]
+                        ?.name,
                 canApprove: controller.canApproveDirectly(item),
                 duplicateLabel: controller.duplicateLabels[item.id],
-                onApprove: () => controller.approve(item),
+                onApprove: () => controller.canApproveDirectly(item)
+                    ? controller.approve(item)
+                    : _edit(context, item),
                 onEdit: () => _edit(context, item),
                 onDismiss: () => _dismiss(context, item),
               );

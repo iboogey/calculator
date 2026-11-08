@@ -41,7 +41,11 @@ class _PendingEditSheetState extends State<PendingEditSheet> {
   late TransactionKind _kind = widget.item.kind == PendingKind.income
       ? TransactionKind.income
       : TransactionKind.expense;
-  late int? _categoryId = widget.item.suggestedCategoryId;
+  late int? _categoryId = () {
+    final suggested = widget.item.suggestedCategoryId;
+    final visible = widget.categoriesFor(_kind);
+    return visible.any((c) => c.id == suggested) ? suggested : null;
+  }();
   late DateTime _date = DateKeys.dateOnly(widget.item.occurredAt);
   late final _amount =
       TextEditingController(text: Money.toEditable(widget.item.amount));

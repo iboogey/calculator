@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/currencies.dart';
+import '../../../core/utils/date_utils.dart';
 import '../../../data/models/pending_item.dart';
 import '../../../widgets/money_text.dart';
 
@@ -17,6 +18,7 @@ class PendingCard extends StatelessWidget {
     required this.onEdit,
     required this.onDismiss,
     this.duplicateLabel,
+    this.today,
   });
 
   final PendingItem item;
@@ -25,12 +27,23 @@ class PendingCard extends StatelessWidget {
   /// Null when the item has no category yet.
   final String? categoryName;
 
-  /// Whether one tap may approve; otherwise "اعتماد" is disabled.
+  /// Whether one tap may approve; otherwise approving opens the editor.
   final bool canApprove;
   final String? duplicateLabel;
+
+  /// For the relative day label; defaults to now.
+  final DateTime? today;
   final VoidCallback onApprove;
   final VoidCallback onEdit;
   final VoidCallback onDismiss;
+
+  String _when() {
+    final at = item.occurredAt;
+    final day = ArabicDates.relativeDay(at, today: today ?? DateTime.now());
+    final hh = at.hour.toString().padLeft(2, '0');
+    final mm = at.minute.toString().padLeft(2, '0');
+    return '$day · $hh:$mm';
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -49,6 +62,21 @@ class PendingCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            Row(
+              children: [
+                Icon(
+                  item.source == PendingSource.voice
+                      ? Icons.mic_none
+                      : Icons.sms_outlined,
+                  size: 16,
+                  color: AppColors.muted,
+                ),
+                const SizedBox(width: 6),
+                Text(_when(),
+                    style: const TextStyle(color: AppColors.muted, fontSize: 12)),
+              ],
+            ),
+            const SizedBox(height: 6),
             Row(
               children: [
                 Expanded(
@@ -100,7 +128,7 @@ class PendingCard extends StatelessWidget {
             Row(
               children: [
                 FilledButton(
-                  onPressed: canApprove ? onApprove : null,
+                  onPressed: onApprove,
                   child: const Text('اعتماد'),
                 ),
                 const SizedBox(width: 8),

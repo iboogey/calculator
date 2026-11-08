@@ -46,6 +46,16 @@ Future<void> _pump(WidgetTester tester, PendingItem item,
     ));
 
 void main() {
+  testWidgets('a suggestion outside the visible categories starts unselected',
+      (tester) async {
+    await _pump(tester, _item(category: 99));
+    expect(
+        tester
+            .widget<FilledButton>(find.widgetWithText(FilledButton, 'حفظ واعتماد'))
+            .onPressed,
+        isNull);
+  });
+
   testWidgets('save stays disabled until a category is picked', (tester) async {
     await _pump(tester, _item());
     Finder save() => find.widgetWithText(FilledButton, 'حفظ واعتماد');
