@@ -10,7 +10,7 @@ void main() {
     final fake = await setUpTestServices();
     final reminder = fake.scheduled[NotificationService.reminderId]!;
     expect((reminder.hour, reminder.minute), (21, 0));
-    expect(reminder.body, 'سجّلت مصاريف اليوم؟');
+    expect(reminder.body, 'هل سجّلت مصاريف اليوم؟');
     expect(Get.find<NotificationService>().permissionGranted.value, isTrue);
   });
 

@@ -83,7 +83,7 @@ class BackupService extends GetxService {
     'obligation_payments',
   };
 
-  static const _notABackup = 'الملف مش نسخة احتياطية من مصاريفي';
+  static const _notABackup = 'هذا الملف ليس نسخة احتياطية من مصاريفي';
 
   Future<String> exportJson(DateTime now) async {
     final data = <String, Object?>{};
@@ -129,7 +129,7 @@ class BackupService extends GetxService {
     if (version is! int) throw const BackupFormatException(_notABackup);
     if (version > AppDatabase.version) {
       throw const BackupFormatException(
-          'النسخة من إصدار أحدث للتطبيق. حدّث التطبيق أول');
+          'النسخة من إصدار أحدث للتطبيق. حدّث التطبيق أولًا');
     }
     final rawTables = decoded['tables'];
     if (rawTables is! Map) throw const BackupFormatException(_notABackup);

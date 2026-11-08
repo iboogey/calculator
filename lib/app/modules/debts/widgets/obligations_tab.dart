@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 
 import '../../../core/logic/debt_summary.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/utils/arabic_count.dart';
 import '../../../core/utils/currencies.dart';
 import '../../../core/utils/date_utils.dart';
 import '../../../widgets/empty_state.dart';
@@ -233,8 +234,8 @@ class _SummaryTile extends StatelessWidget {
           const SizedBox(height: 4),
           Text(
             due == null
-                ? '$count التزامات'
-                : '$count التزامات · أقربها ${ArabicDates.dueLabel(due.daysLeft)}',
+                ? ArabicCount.obligations(count)
+                : '${ArabicCount.obligations(count)} · أقربها ${ArabicDates.dueLabel(due.daysLeft)}',
             style: const TextStyle(color: AppColors.muted, fontSize: 13),
           ),
         ],

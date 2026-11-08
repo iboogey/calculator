@@ -37,7 +37,7 @@ class TransactionsView extends GetView<TransactionsController> {
         if (groups.isEmpty) {
           return const EmptyState(
             icon: Icons.receipt_long_outlined,
-            message: 'ما في عمليات بهالفترة',
+            message: 'لا توجد عمليات في هذه الفترة',
           );
         }
         return ListView.builder(
@@ -62,7 +62,7 @@ class TransactionsView extends GetView<TransactionsController> {
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
       ..showSnackBar(SnackBar(
-        content: const Text('انحذفت العملية'),
+        content: const Text('حُذفت العملية'),
         action: SnackBarAction(
           label: 'تراجع',
           onPressed: () => transactions.undoDelete(record),

@@ -27,7 +27,7 @@ class RecurringSummary extends StatelessWidget {
     if (rules.isEmpty) {
       return const EmptyState(
         icon: Icons.event_repeat_outlined,
-        message: 'ما في مصاريف ثابتة. أضف الإيجار أو الاشتراكات لتنحسب لحالها.',
+        message: 'لا توجد مصاريف ثابتة. أضف الإيجار أو الاشتراكات لتُحتسب تلقائياً.',
       );
     }
     return Card(
@@ -39,7 +39,7 @@ class RecurringSummary extends StatelessWidget {
               title: Text(rule.label,
                   style: const TextStyle(fontWeight: FontWeight.w600)),
               subtitle: Text(
-                'كل شهر يوم ${rule.dayOfMonth} · الجاي: '
+                'كل شهر في يوم ${rule.dayOfMonth} · القادم: '
                 '${ArabicDates.relativeDay(nextDue(rule), today: today)}',
                 style: const TextStyle(color: AppColors.muted, fontSize: 12),
               ),

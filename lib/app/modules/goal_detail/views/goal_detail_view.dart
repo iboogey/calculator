@@ -43,7 +43,7 @@ class GoalDetailView extends GetView<GoalDetailController> {
             Center(
               child: Column(
                 children: [
-                  const Text('بالهدف هلأ',
+                  const Text('في الهدف الآن',
                       style: TextStyle(color: AppColors.muted, fontSize: 13)),
                   MoneyText(controller.saved.value,
                       currency: controller.currency,
@@ -59,7 +59,7 @@ class GoalDetailView extends GetView<GoalDetailController> {
               children: [
                 Expanded(
                   child: FilledButton.icon(
-                    onPressed: () => _ask(context, 'إضافة للهدف', controller.deposit),
+                    onPressed: () => _ask(context, 'إضافة إلى الهدف', controller.deposit),
                     icon: const Icon(Icons.add),
                     label: const Text('إضافة'),
                   ),
@@ -83,7 +83,7 @@ class GoalDetailView extends GetView<GoalDetailController> {
             const Text('الحركات', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
             const SizedBox(height: 8),
             if (movements.isEmpty)
-              const EmptyState(icon: Icons.history, message: 'ما في حركات لسا')
+              const EmptyState(icon: Icons.history, message: 'لا توجد حركات بعد')
             else
               Card(
                 child: Column(

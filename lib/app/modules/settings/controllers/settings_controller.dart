@@ -1,6 +1,7 @@
 import 'package:get/get.dart';
 import 'package:sqflite/sqflite.dart';
 
+import '../../../core/utils/arabic_count.dart';
 import '../../../core/utils/currencies.dart';
 import '../../../core/utils/date_utils.dart';
 import '../../../data/models/app_settings.dart';
@@ -61,12 +62,14 @@ class SettingsController extends GetxController {
 
   String get lastBackupLabel {
     final last = settings.lastBackupAt;
-    if (last == null) return 'ما عملت نسخة احتياطية لسا';
+    if (last == null) return 'لم تُنشئ نسخة احتياطية بعد';
     final days =
         DateKeys.dateOnly(_clock()).difference(DateKeys.dateOnly(last)).inDays;
     if (days <= 0) return 'آخر نسخة: اليوم';
-    if (days == 1) return 'آخر نسخة: مبارح';
-    return 'آخر نسخة: قبل $days يوم';
+    if (days == 1) return 'آخر نسخة: أمس';
+    final ago = ArabicCount.of(days,
+        one: 'يوم', two: 'يومين', few: 'أيام', many: 'يومًا');
+    return 'آخر نسخة: قبل $ago';
   }
 
   bool get backupOverdue {
@@ -82,7 +85,7 @@ class SettingsController extends GetxController {
     try {
       await backup.shareBackup(_clock());
     } catch (_) {
-      Get.find<MessageService>().showError('ما قدرنا نعمل النسخة الاحتياطية');
+      Get.find<MessageService>().showError('تعذّر إنشاء النسخة الاحتياطية');
     } finally {
       _exporting = false;
     }
@@ -95,7 +98,7 @@ class SettingsController extends GetxController {
     try {
       text = await files.pickJsonText();
     } catch (_) {
-      Get.find<MessageService>().showError('ما قدرنا نفتح الملف');
+      Get.find<MessageService>().showError('تعذّر فتح الملف');
       return null;
     }
     if (text == null) return null;
@@ -113,7 +116,7 @@ class SettingsController extends GetxController {
       return true;
     } catch (_) {
       Get.find<MessageService>()
-          .showError('ما قدرنا نسترجع النسخة. بياناتك الحالية ما تغيّرت');
+          .showError('تعذّرت استعادة النسخة. لم تتغيّر بياناتك الحالية');
       return false;
     }
   }
@@ -126,7 +129,7 @@ class SettingsController extends GetxController {
     try {
       await settingsService.update(value);
     } on DatabaseException {
-      Get.find<MessageService>().showError('ما قدرنا نحفظ الإعدادات');
+      Get.find<MessageService>().showError('تعذّر حفظ الإعدادات');
     }
   }
 }

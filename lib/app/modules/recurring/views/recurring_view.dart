@@ -22,7 +22,7 @@ class RecurringView extends GetView<RecurringController> {
         if (rules.isEmpty) {
           return const EmptyState(
             icon: Icons.event_repeat_outlined,
-            message: 'أضف الإيجار، الإنترنت أو الراتب مرة وحدة، والتطبيق بيسجّلها كل شهر لحاله.',
+            message: 'أضف الإيجار أو الإنترنت أو الراتب مرة واحدة، وسيسجّلها التطبيق كل شهر تلقائياً.',
           );
         }
         return ListView(
@@ -42,7 +42,7 @@ class RecurringView extends GetView<RecurringController> {
                           style: const TextStyle(fontWeight: FontWeight.w600)),
                       subtitle: Text(
                         rule.isActive
-                            ? 'كل شهر يوم ${rule.dayOfMonth} · الجاي: '
+                            ? 'كل شهر في يوم ${rule.dayOfMonth} · القادم: '
                                 '${ArabicDates.relativeDay(controller.nextDue(rule), today: controller.today)}'
                             : 'موقوفة',
                         style: const TextStyle(color: AppColors.muted, fontSize: 12),

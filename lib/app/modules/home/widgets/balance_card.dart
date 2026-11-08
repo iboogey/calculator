@@ -91,7 +91,7 @@ class BalanceCard extends StatelessWidget {
               const SizedBox(width: 10),
               Expanded(
                 child: _Stat(
-                  label: 'الكلي معك',
+                  label: 'إجمالي ما لديك',
                   amount: summary.total,
                   currency: currency,
                 ),

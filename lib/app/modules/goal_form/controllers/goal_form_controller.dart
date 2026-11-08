@@ -85,7 +85,7 @@ class GoalFormController extends GetxController {
       }
       return true;
     } on DatabaseException {
-      Get.find<MessageService>().showError('ما قدرنا نحفظ الهدف');
+      Get.find<MessageService>().showError('تعذّر حفظ الهدف');
       return false;
     } finally {
       isSaving.value = false;
@@ -101,14 +101,14 @@ class GoalFormController extends GetxController {
       return true;
     } on GoalNotEmptyException catch (e) {
       Get.find<MessageService>().showError(
-          'اسحب المبلغ من الهدف أول (فيه ${Money.format(e.balance, decimals: currency.decimals)})');
+          'اسحب المبلغ من الهدف أولًا (فيه ${Money.format(e.balance, decimals: currency.decimals)})');
       return false;
     } on GoalHasRecurringException {
       Get.find<MessageService>().showError(
-          'هالهدف عليه ادخار شهري ثابت. احذفه من المصاريف الثابتة أول');
+          'لهذا الهدف ادخار شهري ثابت. احذفه من المصاريف الثابتة أولًا');
       return false;
     } on DatabaseException {
-      Get.find<MessageService>().showError('ما قدرنا نحذف الهدف');
+      Get.find<MessageService>().showError('تعذّر حذف الهدف');
       return false;
     }
   }

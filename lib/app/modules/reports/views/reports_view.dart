@@ -41,7 +41,7 @@ class ReportsView extends GetView<ReportsController> {
                 child: shares.isEmpty
                     ? const EmptyState(
                         icon: Icons.pie_chart_outline,
-                        message: 'ما في مصاريف بهالفترة',
+                        message: 'لا توجد مصاريف في هذه الفترة',
                       )
                     : CategoryDonut(
                         shares: shares,
@@ -60,7 +60,7 @@ class ReportsView extends GetView<ReportsController> {
                     Row(
                       children: [
                         const Expanded(
-                          child: Text('مقارنة آخر 6 شهور',
+                          child: Text('مقارنة آخر 6 أشهر',
                               style: TextStyle(fontWeight: FontWeight.w700)),
                         ),
                         if (change != null)

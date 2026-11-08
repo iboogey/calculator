@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 
 import '../../../core/logic/budget_status.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/utils/arabic_count.dart';
 import '../../../data/models/transaction_category.dart';
 import '../../../routes/app_routes.dart';
 import '../../../widgets/amount_dialog.dart';
@@ -28,16 +29,18 @@ class BudgetsView extends GetView<BudgetsController> {
         }
         final statuses = controller.statuses.toList();
         final rules = controller.rules.toList();
+        final daysLeft = ArabicCount.of(controller.daysLeft,
+            one: 'يوم واحد', two: 'يومان', few: 'أيام', many: 'يومًا');
         return ListView(
           padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
           children: [
-            Text('${period.label} · باقي ${controller.daysLeft} يوم',
+            Text('${period.label} · المتبقي $daysLeft',
                 style: const TextStyle(color: AppColors.muted, fontSize: 13)),
             const SizedBox(height: 12),
             if (statuses.isEmpty)
               const EmptyState(
                 icon: Icons.donut_large_outlined,
-                message: 'ما حطيت ميزانية لأي تصنيف لسا.',
+                message: 'لم تضع ميزانية لأي تصنيف بعد.',
               )
             else
               Card(
@@ -63,7 +66,7 @@ class BudgetsView extends GetView<BudgetsController> {
               ),
             const SizedBox(height: 24),
             SectionHeader(
-              title: 'مصاريف ثابتة — تنحسب تلقائياً',
+              title: 'مصاريف ثابتة — تُحتسب تلقائياً',
               actionLabel: 'إدارة',
               onAction: controller.openRecurring,
             ),
@@ -125,7 +128,7 @@ class BudgetsView extends GetView<BudgetsController> {
         final saved = await controller.setLimit(category.id!, text);
         if (!saved && context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('اكتب مبلغ أكبر من صفر')));
+              const SnackBar(content: Text('اكتب مبلغًا أكبر من صفر')));
         }
       case null:
         break;

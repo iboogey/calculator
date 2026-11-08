@@ -94,7 +94,7 @@ class TransactionsController extends GetxController {
     } on DatabaseException {
       _items = before;
       groups.assignAll(DayGroup.group(_items));
-      Get.find<MessageService>().showError('ما قدرنا نحذف العملية، جرّب مرة ثانية');
+      Get.find<MessageService>().showError('تعذّر حذف العملية، حاول مرة أخرى');
     }
   }
 
@@ -102,7 +102,7 @@ class TransactionsController extends GetxController {
     try {
       await transactions.restore(record);
     } on DatabaseException {
-      Get.find<MessageService>().showError('ما قدرنا نرجّع العملية');
+      Get.find<MessageService>().showError('تعذّرت استعادة العملية');
     }
   }
 

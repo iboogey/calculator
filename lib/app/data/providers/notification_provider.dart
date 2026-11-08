@@ -42,7 +42,7 @@ class LocalNotificationProvider implements NotificationProvider {
     android: AndroidNotificationDetails(
       'budget_alerts',
       'تنبيهات الميزانية',
-      channelDescription: 'لما تقرّب أو تتجاوز ميزانية تصنيف',
+      channelDescription: 'عند الاقتراب من ميزانية تصنيف أو تجاوزها',
       importance: Importance.high,
       priority: Priority.high,
     ),

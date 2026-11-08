@@ -104,7 +104,7 @@ class MonthEndController extends GetxController {
     try {
       await savings.addMovements(movements, answeredPeriodKey: previous.key);
     } on DatabaseException {
-      Get.find<MessageService>().showError('ما قدرنا نحفظ التوزيع');
+      Get.find<MessageService>().showError('تعذّر حفظ التوزيع');
       isSaving.value = false;
       return false;
     }
@@ -122,7 +122,7 @@ class MonthEndController extends GetxController {
     try {
       await _markAnswered();
     } on DatabaseException {
-      Get.find<MessageService>().showError('ما قدرنا نحفظ اختيارك');
+      Get.find<MessageService>().showError('تعذّر حفظ اختيارك');
     }
   }
 

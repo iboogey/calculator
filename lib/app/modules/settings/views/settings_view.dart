@@ -23,7 +23,7 @@ class SettingsView extends GetView<SettingsController> {
             Card(
               child: ListTile(
                 title: const Text('يبدأ الشهر يوم'),
-                subtitle: const Text('مثلاً يوم نزول الراتب'),
+                subtitle: const Text('مثلاً يوم إيداع الراتب'),
                 trailing: DropdownButton<int>(
                   value: settings.periodStartDay,
                   underline: const SizedBox.shrink(),
@@ -62,7 +62,7 @@ class SettingsView extends GetView<SettingsController> {
               child: Column(
                 children: [
                   SwitchListTile(
-                    title: const Text('ذكّرني أسجّل مصاريفي'),
+                    title: const Text('ذكّرني بتسجيل مصاريفي'),
                     value: settings.reminderEnabled,
                     onChanged: controller.setReminderEnabled,
                   ),
@@ -80,7 +80,7 @@ class SettingsView extends GetView<SettingsController> {
                     const Padding(
                       padding: EdgeInsets.fromLTRB(16, 0, 16, 12),
                       child: Text(
-                        'الإشعارات مطفية للتطبيق. فعّلها من إعدادات الجهاز لتوصلك التذكيرات وتنبيهات الميزانية.',
+                        'الإشعارات معطّلة لهذا التطبيق. فعّلها من إعدادات الجهاز لتصلك التذكيرات وتنبيهات الميزانية.',
                         style: TextStyle(
                           color: AppColors.warning,
                           fontSize: 12,
@@ -151,7 +151,7 @@ class SettingsView extends GetView<SettingsController> {
       builder: (context) => AlertDialog(
         title: const Text('استرجاع النسخة؟'),
         content: Text(
-          'رح تنمسح بياناتك الحالية وتنحط مكانها نسخة '
+          'ستُحذف بياناتك الحالية وتحلّ محلّها نسخة '
           '${when.day}/${when.month}/${when.year}: '
           '${summary.transactionCount} عملية و ${summary.goalCount} أهداف.',
         ),
@@ -171,7 +171,7 @@ class SettingsView extends GetView<SettingsController> {
     final restored = await controller.restore(summary);
     if (restored && context.mounted) {
       ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text('انسترجعت النسخة')));
+          .showSnackBar(const SnackBar(content: Text('تمت استعادة النسخة')));
     }
   }
 

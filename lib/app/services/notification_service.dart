@@ -43,7 +43,7 @@ class NotificationService extends GetxService {
         hour: settings.reminderMinutes ~/ 60,
         minute: settings.reminderMinutes % 60,
         title: 'مصاريفي',
-        body: 'سجّلت مصاريف اليوم؟',
+        body: 'هل سجّلت مصاريف اليوم؟',
       );
     } catch (_) {
       // A notification failure must never break the app.
@@ -57,8 +57,8 @@ class NotificationService extends GetxService {
     try {
       await _provider.show(
         id: 1000 + status.category.id! * 10 + (over ? 1 : 0),
-        title: over ? 'تجاوزت ميزانية $name' : 'قرّبت تخلص ميزانية $name',
-        body: 'صرفت ${status.percent}% من ميزانية هالشهر.',
+        title: over ? 'تجاوزت ميزانية $name' : 'اقتربت ميزانية $name من النفاد',
+        body: 'صرفت ${status.percent}% من ميزانية هذا الشهر.',
       );
     } catch (_) {
       // Ignore: the in-app banner still shows the warning.

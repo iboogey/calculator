@@ -41,7 +41,7 @@ void main() {
   testWidgets('opens on Home with an empty month', (tester) async {
     await boot(tester);
     expect(find.text('المتبقي من الراتب'), findsOneWidget);
-    expect(find.textContaining('لسا ما سجلت'), findsOneWidget);
+    expect(find.textContaining('لم تسجّل أي عملية'), findsOneWidget);
   });
 
   testWidgets('adding an expense updates Home', (tester) async {
@@ -121,7 +121,7 @@ void main() {
     expect(chip, findsOneWidget);
     await tester.tap(chip);
     await brief(tester);
-    expect(find.text('انضافت: قهوة'), findsOneWidget);
+    expect(find.text('أُضيفت: قهوة'), findsOneWidget);
     final all = await tester.runAsync(Get.find<TransactionRepository>().getAll);
     expect(all, hasLength(2));
   });
@@ -257,10 +257,10 @@ void main() {
     await tester.runAsync(() => Get.find<TransactionRepository>()
         .add(income(100000, DateTime(now.year, now.month - 1, 1))));
     await idle(tester);
-    expect(find.textContaining('خلص الشهر الماضي'), findsOneWidget);
-    await tester.tap(find.text('مش هلأ'));
+    expect(find.textContaining('انتهى الشهر الماضي'), findsOneWidget);
+    await tester.tap(find.text('ليس الآن'));
     await idle(tester);
-    expect(find.textContaining('خلص الشهر الماضي'), findsNothing);
+    expect(find.textContaining('انتهى الشهر الماضي'), findsNothing);
   });
 }
 

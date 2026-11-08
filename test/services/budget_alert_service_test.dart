@@ -22,7 +22,7 @@ void main() {
   test('warns once at 80 % and once more at 100 %', () async {
     await transactions.add(expense(8000, today));
     await settle();
-    expect(fake.shown.map((n) => n.title), ['قرّبت تخلص ميزانية طعام']);
+    expect(fake.shown.map((n) => n.title), ['اقتربت ميزانية طعام من النفاد']);
 
     await transactions.add(expense(1000, today));
     await settle();

@@ -81,7 +81,7 @@ class HomeView extends GetView<HomeController> {
               if (favorites.isNotEmpty) ...[
                 const SizedBox(height: 20),
                 SectionHeader(
-                  title: 'مفضّلة — بضغطة وحدة',
+                  title: 'المفضّلة — بنقرة واحدة',
                   actionLabel: 'تعديل',
                   onAction: controller.openFavorites,
                 ),
@@ -127,7 +127,7 @@ class HomeView extends GetView<HomeController> {
     messenger
       ..hideCurrentSnackBar()
       ..showSnackBar(SnackBar(
-        content: Text('انضافت: ${favorite.label}'),
+        content: Text('أُضيفت: ${favorite.label}'),
         action: SnackBarAction(
           label: 'تراجع',
           onPressed: () => home.undoFavorite(added),

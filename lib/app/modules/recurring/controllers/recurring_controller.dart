@@ -53,7 +53,7 @@ class RecurringController extends GetxController {
     try {
       await recurring.setActive(rule.id!, !rule.isActive);
     } on DatabaseException {
-      Get.find<MessageService>().showError('ما قدرنا نغيّر حالة القاعدة');
+      Get.find<MessageService>().showError('تعذّر تغيير حالة القاعدة');
     }
   }
 

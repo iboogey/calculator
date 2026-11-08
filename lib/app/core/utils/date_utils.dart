@@ -19,7 +19,8 @@ abstract final class DateKeys {
   static String _two(int value) => value.toString().padLeft(2, '0');
 }
 
-/// Arabic (Levantine) date labels with Western digits, as in the mockup.
+/// Arabic date labels (Levantine month names) with Western digits, as in the
+/// mockup.
 abstract final class ArabicDates {
   static const months = [
     'كانون الثاني',

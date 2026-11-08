@@ -115,7 +115,7 @@ class TransactionFormController extends GetxController {
     try {
       return await _save();
     } on DatabaseException {
-      Get.find<MessageService>().showError('ما قدرنا نحفظ العملية، جرّب مرة ثانية');
+      Get.find<MessageService>().showError('تعذّر حفظ العملية، حاول مرة أخرى');
       return false;
     } finally {
       isSaving.value = false;
@@ -170,7 +170,7 @@ class TransactionFormController extends GetxController {
       await transactions.delete(id);
       return true;
     } on DatabaseException {
-      Get.find<MessageService>().showError('ما قدرنا نحذف العملية، جرّب مرة ثانية');
+      Get.find<MessageService>().showError('تعذّر حذف العملية، حاول مرة أخرى');
       return false;
     } finally {
       isSaving.value = false;

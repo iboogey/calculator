@@ -30,7 +30,7 @@ class GoalFormView extends GetView<GoalFormController> {
               controller: controller.nameController,
               decoration: const InputDecoration(
                 labelText: 'اسم الهدف',
-                hintText: 'مثلاً لابتوب أو سفرة',
+                hintText: 'مثلاً حاسوب محمول أو رحلة',
                 border: OutlineInputBorder(),
               ),
             ),
@@ -50,14 +50,14 @@ class GoalFormView extends GetView<GoalFormController> {
               return ListTile(
                 contentPadding: EdgeInsets.zero,
                 leading: const Icon(Icons.event_outlined),
-                title: const Text('بدّي أوصل قبل'),
+                title: const Text('أريد بلوغ الهدف قبل'),
                 subtitle: Text(date == null
                     ? 'بدون تاريخ'
                     : '${ArabicDates.dayMonth(date)} ${date.year}'),
                 trailing: date == null
                     ? null
                     : IconButton(
-                        tooltip: 'شيل التاريخ',
+                        tooltip: 'إزالة التاريخ',
                         icon: const Icon(Icons.close),
                         onPressed: () => controller.setTargetDate(null),
                       ),

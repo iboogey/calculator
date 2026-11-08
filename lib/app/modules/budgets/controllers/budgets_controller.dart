@@ -96,7 +96,7 @@ class BudgetsController extends GetxController {
       await budgets.setLimit(categoryId, limit);
       return true;
     } on DatabaseException {
-      Get.find<MessageService>().showError('ما قدرنا نحفظ الميزانية');
+      Get.find<MessageService>().showError('تعذّر حفظ الميزانية');
       return false;
     }
   }
@@ -105,7 +105,7 @@ class BudgetsController extends GetxController {
     try {
       await budgets.remove(categoryId);
     } on DatabaseException {
-      Get.find<MessageService>().showError('ما قدرنا نحذف الميزانية');
+      Get.find<MessageService>().showError('تعذّر حذف الميزانية');
     }
   }
 

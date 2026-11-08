@@ -28,7 +28,7 @@ void main() {
 
   test('never backed up: says so and flags it', () {
     final c = open();
-    expect(c.lastBackupLabel, 'ما عملت نسخة احتياطية لسا');
+    expect(c.lastBackupLabel, 'لم تُنشئ نسخة احتياطية بعد');
     expect(c.backupOverdue, isTrue);
   });
 
@@ -43,7 +43,7 @@ void main() {
   test('picking a file that is not a backup shows why', () async {
     files().textToPick = 'not json';
     expect(await open().pickBackup(), isNull);
-    expect(Get.find<MessageService>().lastMessage.value, contains('مش نسخة'));
+    expect(Get.find<MessageService>().lastMessage.value, contains('ليس نسخة'));
   });
 
   test('cancelling the picker does nothing', () async {

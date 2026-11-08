@@ -64,7 +64,7 @@ class RecurringFormView extends GetView<RecurringFormController> {
             const SizedBox(height: 12),
             Row(
               children: [
-                const Expanded(child: Text('ينحسب كل شهر يوم')),
+                const Expanded(child: Text('يُحتسب كل شهر في يوم')),
                 Obx(() => DropdownButton<int>(
                       value: controller.dayOfMonth.value,
                       items: [
@@ -120,7 +120,7 @@ class RecurringFormView extends GetView<RecurringFormController> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('حذف المصروف الثابت؟'),
-        content: const Text('العمليات اللي انسجلت قبل بتضل موجودة.'),
+        content: const Text('ستبقى العمليات المسجّلة سابقًا كما هي.'),
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(context, false),

@@ -30,7 +30,7 @@ void main() {
     c.selectCategory(foodCategoryId);
     await breakDatabase();
     expect(await c.save(), isFalse);
-    expect(lastMessage(), 'ما قدرنا نحفظ العملية، جرّب مرة ثانية');
+    expect(lastMessage(), 'تعذّر حفظ العملية، حاول مرة أخرى');
     expect(c.isSaving.value, isFalse);
   });
 
@@ -47,7 +47,7 @@ void main() {
     final shown = c.groups.expand((g) => g.transactions).single;
     await breakDatabase();
     await c.delete(shown);
-    expect(lastMessage(), 'ما قدرنا نحذف العملية، جرّب مرة ثانية');
+    expect(lastMessage(), 'تعذّر حذف العملية، حاول مرة أخرى');
     expect(c.groups.expand((g) => g.transactions).map((t) => t.id), [saved.id]);
   });
 
@@ -56,6 +56,6 @@ void main() {
     await breakDatabase();
     await c.setStartDay(25);
     expect(Get.find<SettingsService>().settings.value.periodStartDay, 1);
-    expect(lastMessage(), 'ما قدرنا نحفظ الإعدادات');
+    expect(lastMessage(), 'تعذّر حفظ الإعدادات');
   });
 }

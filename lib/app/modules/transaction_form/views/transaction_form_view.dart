@@ -102,7 +102,7 @@ class TransactionFormView extends GetView<TransactionFormController> {
                           onChanged: (v) =>
                               controller.saveAsFavorite.value = v ?? false,
                           title: const Text(
-                              'احفظها كمفضّلة (زر بضغطة وحدة بالرئيسية)'),
+                              'احفظها في المفضّلة (زر بنقرة واحدة في الرئيسية)'),
                         )),
                 ],
               ),

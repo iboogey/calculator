@@ -130,7 +130,7 @@ class HomeController extends GetxController {
             DateTime.now().millisecondsSinceEpoch),
       ));
     } on DatabaseException {
-      Get.find<MessageService>().showError('ما قدرنا نحفظ العملية، جرّب مرة ثانية');
+      Get.find<MessageService>().showError('تعذّر حفظ العملية، حاول مرة أخرى');
       return null;
     }
   }
@@ -139,7 +139,7 @@ class HomeController extends GetxController {
     try {
       await transactions.delete(record.id!);
     } on DatabaseException {
-      Get.find<MessageService>().showError('ما قدرنا نحذف العملية، جرّب مرة ثانية');
+      Get.find<MessageService>().showError('تعذّر حذف العملية، حاول مرة أخرى');
     }
   }
 
@@ -161,7 +161,7 @@ class HomeController extends GetxController {
       await settings.update(settings.settings.value
           .copyWith(lastMonthEndPromptPeriod: previous.key));
     } on DatabaseException {
-      Get.find<MessageService>().showError('ما قدرنا نحفظ اختيارك');
+      Get.find<MessageService>().showError('تعذّر حفظ اختيارك');
     }
   }
 

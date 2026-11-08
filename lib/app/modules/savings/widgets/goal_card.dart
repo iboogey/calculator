@@ -70,7 +70,7 @@ class GoalCard extends StatelessWidget {
               ],
               if (monthlyNeeded != null) ...[
                 const SizedBox(height: 4),
-                Text('وفّر ${MoneyText.label(monthlyNeeded!, currency)} بالشهر لتوصل',
+                Text('وفّر ${MoneyText.label(monthlyNeeded!, currency)} شهريًا لتبلغ هدفك',
                     style: const TextStyle(color: AppColors.primary, fontSize: 12)),
               ],
             ],

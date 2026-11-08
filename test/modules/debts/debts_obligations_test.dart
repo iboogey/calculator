@@ -158,7 +158,7 @@ void main() {
     ));
 
     expect(find.text('المبلغ المستحق عليّ'), findsOneWidget);
-    expect(find.text('2 التزامات · أقربها خلال يومين'), findsOneWidget);
+    expect(find.text('التزامان · أقربها خلال يومين'), findsOneWidget);
     expect(find.text('يستحق في 10 تشرين الثاني · خلال يومين'), findsOneWidget);
     expect(find.text('بلا موعد محدد'), findsOneWidget);
     expect(find.byType(LinearProgressIndicator), findsOneWidget);
