@@ -1,3 +1,6 @@
+/// Which AI service suggests categories and parses voice notes.
+enum AiProviderKind { none, gemini, claude, openai }
+
 class AppSettings {
   const AppSettings({
     this.periodStartDay = 1,
@@ -7,10 +10,15 @@ class AppSettings {
     this.reminderMinutes = 21 * 60,
     this.lastMonthEndPromptPeriod,
     this.lastBackupAt,
+    this.smsImportEnabled = false,
+    this.aiProvider = AiProviderKind.none,
+    this.aiModel,
+    this.voiceLanguage = 'ar-JO',
   });
 
   factory AppSettings.fromMap(Map<String, Object?> map) {
     final backupAt = map['last_backup_at'] as int?;
+    final provider = map['ai_provider'] as String?;
     return AppSettings(
       periodStartDay: map['period_start_day'] as int,
       currencyCode: map['currency_code'] as String,
@@ -20,6 +28,12 @@ class AppSettings {
       lastMonthEndPromptPeriod: map['last_month_end_prompt_period'] as String?,
       lastBackupAt:
           backupAt == null ? null : DateTime.fromMillisecondsSinceEpoch(backupAt),
+      smsImportEnabled: map['sms_import_enabled'] == 1,
+      aiProvider: provider == null
+          ? AiProviderKind.none
+          : AiProviderKind.values.byName(provider),
+      aiModel: map['ai_model'] as String?,
+      voiceLanguage: map['voice_language'] as String? ?? 'ar-JO',
     );
   }
 
@@ -32,6 +46,10 @@ class AppSettings {
   final int reminderMinutes;
   final String? lastMonthEndPromptPeriod;
   final DateTime? lastBackupAt;
+  final bool smsImportEnabled;
+  final AiProviderKind aiProvider;
+  final String? aiModel;
+  final String voiceLanguage;
 
   AppSettings copyWith({
     int? periodStartDay,
@@ -41,6 +59,11 @@ class AppSettings {
     int? reminderMinutes,
     String? lastMonthEndPromptPeriod,
     DateTime? lastBackupAt,
+    bool? smsImportEnabled,
+    AiProviderKind? aiProvider,
+    String? aiModel,
+    bool clearAiModel = false,
+    String? voiceLanguage,
   }) =>
       AppSettings(
         periodStartDay: periodStartDay ?? this.periodStartDay,
@@ -51,6 +74,10 @@ class AppSettings {
         lastMonthEndPromptPeriod:
             lastMonthEndPromptPeriod ?? this.lastMonthEndPromptPeriod,
         lastBackupAt: lastBackupAt ?? this.lastBackupAt,
+        smsImportEnabled: smsImportEnabled ?? this.smsImportEnabled,
+        aiProvider: aiProvider ?? this.aiProvider,
+        aiModel: clearAiModel ? null : aiModel ?? this.aiModel,
+        voiceLanguage: voiceLanguage ?? this.voiceLanguage,
       );
 
   Map<String, Object?> toMap() => {
@@ -61,6 +88,10 @@ class AppSettings {
         'reminder_minutes': reminderMinutes,
         'last_month_end_prompt_period': lastMonthEndPromptPeriod,
         'last_backup_at': lastBackupAt?.millisecondsSinceEpoch,
+        'sms_import_enabled': smsImportEnabled ? 1 : 0,
+        'ai_provider': aiProvider.name,
+        'ai_model': aiModel,
+        'voice_language': voiceLanguage,
       };
 
   @override
@@ -72,10 +103,15 @@ class AppSettings {
       other.reminderEnabled == reminderEnabled &&
       other.reminderMinutes == reminderMinutes &&
       other.lastMonthEndPromptPeriod == lastMonthEndPromptPeriod &&
-      other.lastBackupAt == lastBackupAt;
+      other.lastBackupAt == lastBackupAt &&
+      other.smsImportEnabled == smsImportEnabled &&
+      other.aiProvider == aiProvider &&
+      other.aiModel == aiModel &&
+      other.voiceLanguage == voiceLanguage;
 
   @override
   int get hashCode => Object.hash(periodStartDay, currencyCode,
       currencyDecimals, reminderEnabled, reminderMinutes,
-      lastMonthEndPromptPeriod, lastBackupAt);
+      lastMonthEndPromptPeriod, lastBackupAt, smsImportEnabled, aiProvider,
+      aiModel, voiceLanguage);
 }

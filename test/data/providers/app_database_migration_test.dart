@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:calculator/app/data/models/app_settings.dart';
 import 'package:calculator/app/data/providers/app_database.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:path/path.dart' as p;
@@ -26,7 +27,7 @@ void main() {
   test('fresh database has the debt tables', () async {
     final db = (await openTestDatabase()).db;
     expect(await _tableNames(db), containsAll(_debtTables));
-    expect(AppDatabase.version, 2);
+    expect(AppDatabase.version, 3);
   });
 
   test('upgrading a version-1 database keeps its data and adds the debt tables',
@@ -71,7 +72,70 @@ void main() {
     expect(await _tableNames(db), containsAll(_debtTables));
     expect(
       (await db.rawQuery('PRAGMA user_version')).single['user_version'],
-      2,
+      3,
+    );
+  });
+
+  test('fresh database has the smart import tables and one device_state row',
+      () async {
+    final db = (await openTestDatabase()).db;
+    expect(await _tableNames(db),
+        containsAll(['pending_items', 'learned_categories', 'device_state']));
+    final state = (await db.query('device_state')).single;
+    expect(state['last_sms_scan_at'], isNull);
+  });
+
+  test('upgrading a version-2 database keeps its data and adds smart import',
+      () async {
+    sqfliteFfiInit();
+    final dir = Directory.systemTemp.createTempSync();
+    addTearDown(() => dir.deleteSync(recursive: true));
+    final path = p.join(dir.path, 'v2.db');
+
+    final v2 = await databaseFactoryFfi.openDatabase(
+      path,
+      options: OpenDatabaseOptions(
+        version: 2,
+        onConfigure: (db) => db.execute('PRAGMA foreign_keys = ON'),
+        onCreate: (db, _) async {
+          for (final s in [...AppDatabase.schemaV1, ...AppDatabase.schemaV2]) {
+            await db.execute(s);
+          }
+          await db.insert('categories', {
+            'name': 'طعام',
+            'icon_key': 'food',
+            'color_value': 0,
+            'kind': 'expense',
+          });
+          await db.insert('transactions', {
+            'kind': 'expense',
+            'amount': 5000,
+            'category_id': 1,
+            'date': '2026-11-01',
+            'created_at': 0,
+          });
+          await db.insert('settings', {'id': 1});
+        },
+      ),
+    );
+    expect(await _tableNames(v2), isNot(contains('pending_items')));
+    await v2.close();
+
+    final db =
+        await AppDatabase.open(factory: databaseFactoryFfi, path: path);
+    addTearDown(db.close);
+    expect(await db.query('transactions'), hasLength(1));
+    expect(await _tableNames(db),
+        containsAll(['pending_items', 'learned_categories', 'device_state']));
+    expect(await db.query('device_state'), hasLength(1));
+    final settings = AppSettings.fromMap((await db.query('settings')).single);
+    expect(settings.smsImportEnabled, isFalse);
+    expect(settings.aiProvider, AiProviderKind.none);
+    expect(settings.aiModel, isNull);
+    expect(settings.voiceLanguage, 'ar-JO');
+    expect(
+      (await db.rawQuery('PRAGMA user_version')).single['user_version'],
+      3,
     );
   });
 
