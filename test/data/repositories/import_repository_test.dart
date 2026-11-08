@@ -1,9 +1,11 @@
 import 'package:calculator/app/core/logic/bank_sms_parser.dart';
 import 'package:calculator/app/data/models/debt_entry.dart';
+import 'package:calculator/app/data/models/enums.dart';
 import 'package:calculator/app/data/models/pending_item.dart';
 import 'package:calculator/app/data/repositories/import_repository.dart';
 import 'package:calculator/app/services/database_service.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:sqflite/sqflite.dart';
 
 import '../../helpers/fixtures.dart';
 import '../../helpers/test_database.dart';
@@ -104,7 +106,10 @@ void main() {
     final rows = await database.db
         .query('transactions', where: 'id = ?', whereArgs: [saved.id]);
     expect(rows, hasLength(1));
-    expect(await repo.learnedCategory('shop:SAMPLE SUPER MARKET'), 2);
+    expect(
+        await repo.learnedCategory(
+            'shop:SAMPLE SUPER MARKET', TransactionKind.expense),
+        2);
   });
 
   test('last category choice wins', () async {
@@ -114,7 +119,10 @@ void main() {
       await repo.approveAsTransaction(
           item, expense(12500, DateTime(2026, 11, 1), categoryId: category));
     }
-    expect(await repo.learnedCategory('shop:SAMPLE SUPER MARKET'), 3);
+    expect(
+        await repo.learnedCategory(
+            'shop:SAMPLE SUPER MARKET', TransactionKind.expense),
+        3);
   });
 
   test('voice approval learns nothing', () async {
@@ -165,7 +173,10 @@ void main() {
         item, expense(12500, DateTime(2026, 11, 1), categoryId: 2));
     await database.db
         .update('categories', {'is_archived': 1}, where: 'id = 2');
-    expect(await repo.learnedCategory('shop:SAMPLE SUPER MARKET'), isNull);
+    expect(
+        await repo.learnedCategory(
+            'shop:SAMPLE SUPER MARKET', TransactionKind.expense),
+        isNull);
   });
 
   test('no table holds the SMS body after approval', () async {
@@ -184,5 +195,56 @@ void main() {
       'savings_goals', 'recurring_rules', 'transactions', 'budgets',
       'savings_movements', 'quick_templates', 'budget_alerts_sent', 'settings',
     });
+  });
+
+  test('a learned category is only offered for its own kind', () async {
+    await database.db.insert('learned_categories',
+        {'name_key': 'cliq:RANA OMAR SALEH', 'category_id': salaryCategoryId});
+    expect(
+        await repo.learnedCategory(
+            'cliq:RANA OMAR SALEH', TransactionKind.income),
+        salaryCategoryId);
+    expect(
+        await repo.learnedCategory(
+            'cliq:RANA OMAR SALEH', TransactionKind.expense),
+        isNull);
+  });
+
+  test('approving the same item twice writes one transaction', () async {
+    await repo.addPending([sms()]);
+    final item = (await repo.getPending()).single;
+    await repo.approveAsTransaction(item, expense(12500, DateTime(2026, 11, 1)));
+    await expectLater(
+        repo.approveAsTransaction(item, expense(12500, DateTime(2026, 11, 1))),
+        throwsA(isA<PendingItemGoneException>()));
+    expect(await database.db.query('transactions'), hasLength(1));
+  });
+
+  test('approving the same debt item twice writes one entry', () async {
+    final personId = await database.db.insert('debt_people',
+        {'name': 'Sami', 'created_at': DateTime(2026, 11, 1).millisecondsSinceEpoch});
+    await repo.addPending([voice().copyWith(kind: PendingKind.debtGave)]);
+    final item = (await repo.getPending()).single;
+    final entry = DebtEntry(
+        personId: personId,
+        amount: 3000,
+        date: DateTime(2026, 11, 3),
+        createdAt: DateTime(2026, 11, 3));
+    await repo.approveAsDebt(item, entry);
+    await expectLater(repo.approveAsDebt(item, entry),
+        throwsA(isA<PendingItemGoneException>()));
+    expect(await database.db.query('debt_entries'), hasLength(1));
+  });
+
+  test('a failing insert rolls back: the pending row stays', () async {
+    await repo.addPending([sms()]);
+    final item = (await repo.getPending()).single;
+    await expectLater(
+        repo.approveAsTransaction(
+            item, expense(12500, DateTime(2026, 11, 1), categoryId: 999)),
+        throwsA(isA<DatabaseException>()));
+    expect(await repo.getPending(), [item]);
+    expect(await database.db.query('transactions'), isEmpty);
+    expect(await database.db.query('learned_categories'), isEmpty);
   });
 }

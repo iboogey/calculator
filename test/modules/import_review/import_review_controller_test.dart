@@ -126,6 +126,44 @@ void main() {
         isTrue);
   });
 
+  test('a suggested category of the other kind or archived needs the editor',
+      () async {
+    await imports().addPending([
+      _item(amount: 1000, at: DateTime(2026, 11, 3, 9),
+          category: salaryCategoryId),
+      _item(amount: 2000, at: DateTime(2026, 11, 3, 10),
+          kind: PendingKind.income, category: foodCategoryId),
+    ]);
+    await Get.find<DatabaseService>().db.update(
+        'categories', {'is_archived': 1},
+        where: 'id = ?', whereArgs: [foodCategoryId]);
+    await imports().addPending(
+        [_item(amount: 4000, at: DateTime(2026, 11, 3, 12))]);
+    final c = await open();
+    expect(c.items, hasLength(3));
+    final unknown =
+        _item(amount: 3000, at: DateTime(2026, 11, 3), category: 999);
+    for (final item in [...c.items, unknown]) {
+      expect(c.canApproveDirectly(item), isFalse, reason: '${item.amount}');
+      expect(await c.approve(item), isFalse, reason: '${item.amount}');
+    }
+    expect(await Get.find<TransactionRepository>().getAll(), isEmpty);
+    expect(await imports().getPending(), hasLength(3));
+  });
+
+  test('approving an item already approved writes once, without an error',
+      () async {
+    await imports().addPending([_item(amount: 3500, at: DateTime(2026, 11, 3))]);
+    final c = await open();
+    final stale = c.items.single;
+    expect(await c.approve(stale), isTrue);
+    await c.approve(stale);
+    expect(await Get.find<TransactionRepository>().getAll(), hasLength(1));
+    expect(Get.find<MessageService>().lastMessage.value, isNull);
+    expect(c.isSaving.value, isFalse);
+    expect(c.items, isEmpty);
+  });
+
   test('approveEdited writes the edited values and learns the category',
       () async {
     await imports().addPending(
@@ -147,7 +185,10 @@ void main() {
     expect(saved.date, DateTime(2026, 11, 5));
     expect(saved.categoryId, salaryCategoryId);
     expect(saved.note, 'تعديل');
-    expect(await imports().learnedCategory(item.learnKey!), salaryCategoryId);
+    expect(
+        await imports().learnedCategory(
+            item.learnKey!, TransactionKind.income),
+        salaryCategoryId);
     expect(await imports().getPending(), isEmpty);
   });
 

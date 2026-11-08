@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:calculator/app/data/models/app_settings.dart';
 import 'package:calculator/app/data/models/pending_item.dart';
 import 'package:calculator/app/data/providers/ai_client.dart';
@@ -261,5 +263,33 @@ void main() {
     speech().emit(_spoken, isFinal: true);
     expect(c.text.value, isEmpty);
     expect(c.state.value, VoiceState.idle);
+  });
+
+  test('closing the sheet while the recognizer initialises never starts it',
+      () async {
+    await configure();
+    final gate = speech().initGate = Completer<bool>();
+    final c = open();
+    final starting = c.startListening();
+    await speech().initCalled.future;
+    await c.cancel();
+    gate.complete(true);
+    await starting;
+    expect(speech().startCount, 0);
+    expect(c.state.value, VoiceState.idle);
+    expect(lastMessage(), isNull);
+  });
+
+  test('a second tap while initialising starts the recognizer once', () async {
+    await configure();
+    final gate = speech().initGate = Completer<bool>();
+    final c = open();
+    final first = c.startListening();
+    await speech().initCalled.future;
+    final second = c.startListening();
+    gate.complete(true);
+    await Future.wait([first, second]);
+    expect(speech().startCount, 1);
+    expect(c.state.value, VoiceState.listening);
   });
 }

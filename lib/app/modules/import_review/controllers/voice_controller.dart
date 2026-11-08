@@ -106,13 +106,18 @@ class VoiceController extends GetxController {
         state.value == VoiceState.sending) {
       return;
     }
-    if (!await ensureConfigured()) return;
+    // Closing the sheet or tapping again while this call waits bumps the
+    // session; then this call stops, so the recognizer never starts without
+    // a sheet or twice.
+    final session = ++_session;
+    if (!await ensureConfigured() || session != _session) return;
     bool available;
     try {
       available = await speech.init();
     } catch (_) {
       available = false;
     }
+    if (session != _session) return;
     if (!available) {
       state.value = VoiceState.idle;
       _messages.showError(speechUnavailableMessage);

@@ -145,20 +145,34 @@ class ImportReviewController extends GetxController {
         _ => null,
       };
 
-  /// Whether [item] can be approved with one tap.
+  /// Whether [item] can be approved with one tap: a debt needs a person, an
+  /// income or expense an active suggested category of the same kind.
   bool canApproveDirectly(PendingItem item) => switch (item.kind) {
         PendingKind.income ||
         PendingKind.expense =>
-          item.suggestedCategoryId != null,
+          _directCategory(item) != null,
         PendingKind.debtGave || PendingKind.debtTook =>
           item.personId != null || item.personName != null,
       };
+
+  /// [item]'s suggested category when it may be used as is.
+  int? _directCategory(PendingItem item) {
+    final id = item.suggestedCategoryId;
+    final category = id == null ? null : categoriesById[id];
+    if (category == null ||
+        category.isArchived ||
+        category.kind != _transactionKind(item.kind)) {
+      return null;
+    }
+    return category.id;
+  }
 
   static bool _isDebt(PendingKind kind) =>
       kind == PendingKind.debtGave || kind == PendingKind.debtTook;
 
   /// Approves [item] as suggested. Returns false when it cannot be approved
-  /// directly or saving fails (a message is shown).
+  /// directly or saving fails (a message is shown). An item that is no
+  /// longer pending was already handled: true, without writing again.
   Future<bool> approve(PendingItem item) {
     if (_isDebt(item.kind)) {
       if (!canApproveDirectly(item)) return Future.value(false);
@@ -166,7 +180,7 @@ class ImportReviewController extends GetxController {
           item.personId, item.personName, item.note);
     }
     final kind = _transactionKind(item.kind);
-    final category = item.suggestedCategoryId;
+    final category = _directCategory(item);
     if (kind == null || category == null) return Future.value(false);
     return _saveTransaction(item, kind, item.amount, item.occurredAt, category,
         item.note);
@@ -213,6 +227,9 @@ class ImportReviewController extends GetxController {
         ),
       );
       return true;
+    } on PendingItemGoneException {
+      await load();
+      return true;
     } on DatabaseException {
       Get.find<MessageService>().showError('تعذّر حفظ العملية، حاول مرة أخرى');
       return false;
@@ -242,6 +259,9 @@ class ImportReviewController extends GetxController {
               DateTime.now().millisecondsSinceEpoch),
         ),
       );
+      return true;
+    } on PendingItemGoneException {
+      await load();
       return true;
     } on DatabaseException {
       Get.find<MessageService>().showError('تعذّر حفظ العملية، حاول مرة أخرى');

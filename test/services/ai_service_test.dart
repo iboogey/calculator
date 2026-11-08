@@ -168,7 +168,10 @@ void main() {
       client.reply = 'ok';
       await ai.testConnection();
       client.reply = const AiException(aiInvalidKeyMessage);
-      expect(() => ai.testConnection(), throwsA(isA<AiException>()));
+      await expectLater(
+          ai.testConnection(),
+          throwsA(isA<AiException>()
+              .having((e) => e.message, 'message', aiInvalidKeyMessage)));
     });
 
     test('throws when not configured', () {

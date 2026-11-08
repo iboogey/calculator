@@ -1,6 +1,7 @@
 import 'package:get/get.dart';
 
 import '../core/logic/bank_sms_parser.dart';
+import '../data/models/enums.dart';
 import '../data/models/pending_item.dart';
 import '../data/providers/sms_inbox_provider.dart';
 import '../data/repositories/category_repository.dart';
@@ -70,19 +71,25 @@ class SmsImportService extends GetxService {
 
     final incomeOther = byIcon('income_other');
     final other = byIcon('other');
-    final learned = <String, int?>{};
+    final learned = <(String, TransactionKind), int?>{};
     final suggested = <String, int?>{};
     final items = <PendingItem>[];
-    var newest = messages.first.date;
+    var newest = after;
 
     for (final message in messages) {
+      // A message dated after [now] waits for a later scan, which reads on
+      // from at most [now]: the scan point never moves past [now], so a
+      // future-dated message cannot make later ones be skipped.
+      if (message.date.isAfter(now)) continue;
       if (message.date.isAfter(newest)) newest = message.date;
       final sms = BankSmsParser.parse(message.body);
       if (sms == null) continue;
+      final income = sms.type == BankSmsType.cliqReceived;
+      final kind = income ? TransactionKind.income : TransactionKind.expense;
       final key = learnedKey(sms.type, sms.name);
-      var categoryId = learned.containsKey(key)
-          ? learned[key]
-          : learned[key] = await imports.learnedCategory(key);
+      var categoryId = learned.containsKey((key, kind))
+          ? learned[(key, kind)]
+          : learned[(key, kind)] = await imports.learnedCategory(key, kind);
       if (categoryId == null) {
         switch (sms.type) {
           case BankSmsType.cliqReceived:
@@ -103,9 +110,7 @@ class SmsImportService extends GetxService {
       items.add(
         PendingItem(
           source: PendingSource.sms,
-          kind: sms.type == BankSmsType.cliqReceived
-              ? PendingKind.income
-              : PendingKind.expense,
+          kind: income ? PendingKind.income : PendingKind.expense,
           amount: sms.amount,
           occurredAt: message.date,
           smsType: sms.type,

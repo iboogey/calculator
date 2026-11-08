@@ -71,9 +71,11 @@ abstract final class BankSmsParser {
   );
   static final RegExp _gap = RegExp(r'\s{2,}');
   static final RegExp _country = RegExp(r'^[A-Z]{3}$');
+  static final RegExp _lineBreaks = RegExp(r'[\r\n]+');
 
   static ParsedBankSms? parse(String body) {
-    final text = body.trim();
+    // A message wrapped across lines reads as one line.
+    final text = body.replaceAll(_lineBreaks, ' ').trim();
 
     var m = _card.firstMatch(text);
     if (m != null) {

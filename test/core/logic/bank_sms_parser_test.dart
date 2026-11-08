@@ -80,6 +80,14 @@ void main() {
     expect(BankSmsParser.parse('  $smsCliqSent  ')!.amount, 25000);
   });
 
+  test('a message wrapped across lines still parses', () {
+    expect(BankSmsParser.parse(smsCardWrapped), BankSmsParser.parse(smsCard));
+    expect(BankSmsParser.parse(smsCliqSentWrapped),
+        BankSmsParser.parse(smsCliqSent));
+    expect(BankSmsParser.parse(smsCard), isNotNull);
+    expect(BankSmsParser.parse(smsCliqSent), isNotNull);
+  });
+
   test('unparseable amount returns null', () {
     expect(BankSmsParser.parse(smsCard.replaceFirst('3.5', '3.5.1')), isNull);
   });

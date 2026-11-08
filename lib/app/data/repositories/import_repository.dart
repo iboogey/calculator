@@ -2,8 +2,15 @@ import 'package:sqflite/sqflite.dart';
 
 import '../../services/database_service.dart';
 import '../models/debt_entry.dart';
+import '../models/enums.dart';
 import '../models/pending_item.dart';
 import '../models/transaction_record.dart';
+
+/// Thrown when approving an item whose pending row is already gone (a double
+/// tap or a stale list): it was handled before, so nothing is written.
+class PendingItemGoneException implements Exception {
+  const PendingItemGoneException();
+}
 
 /// Pending imported items, the learned shop/payee -> category memory and the
 /// device-local SMS scan point.
@@ -99,24 +106,37 @@ class ImportRepository {
 
   // ---- Learned categories ----
 
-  /// The remembered category for [key], unless that category is archived.
-  Future<int?> learnedCategory(String key) async {
+  /// The remembered category for [key], if it is a [kind] category and not
+  /// archived (a CliQ name may be learned from an incoming transfer and then
+  /// seen in an outgoing one).
+  Future<int?> learnedCategory(String key, TransactionKind kind) async {
     final rows = await _database.db.rawQuery(
       'SELECT l.category_id AS category_id FROM $_learned l '
       'JOIN categories c ON c.id = l.category_id '
-      'WHERE l.name_key = ? AND c.is_archived = 0',
-      [key],
+      'WHERE l.name_key = ? AND c.kind = ? AND c.is_archived = 0',
+      [key, kind.name],
     );
     return rows.isEmpty ? null : rows.first['category_id'] as int;
   }
 
   // ---- Approval ----
 
+  /// Deletes [item]'s pending row inside [txn]; throws
+  /// [PendingItemGoneException] (rolling the transaction back) when it was
+  /// already gone.
+  Future<void> _takePending(Transaction txn, PendingItem item) async {
+    final deleted =
+        await txn.delete(_pending, where: 'id = ?', whereArgs: [item.id]);
+    if (deleted != 1) throw const PendingItemGoneException();
+  }
+
+  /// Writes [record] and removes [item] in one transaction. Throws
+  /// [PendingItemGoneException] when [item] is no longer pending.
   Future<TransactionRecord> approveAsTransaction(
       PendingItem item, TransactionRecord record) async {
     final id = await _database.db.transaction((txn) async {
+      await _takePending(txn, item);
       final id = await txn.insert('transactions', record.toMap()..remove('id'));
-      await txn.delete(_pending, where: 'id = ?', whereArgs: [item.id]);
       final key = item.learnKey;
       if (key != null) {
         await txn.insert(
@@ -131,11 +151,12 @@ class ImportRepository {
     return record.withId(id);
   }
 
+  /// Writes [entry] and removes [item] in one transaction. Throws
+  /// [PendingItemGoneException] when [item] is no longer pending.
   Future<DebtEntry> approveAsDebt(PendingItem item, DebtEntry entry) async {
     final id = await _database.db.transaction((txn) async {
-      final id = await txn.insert('debt_entries', entry.toMap()..remove('id'));
-      await txn.delete(_pending, where: 'id = ?', whereArgs: [item.id]);
-      return id;
+      await _takePending(txn, item);
+      return txn.insert('debt_entries', entry.toMap()..remove('id'));
     });
     _database.notifyChanged();
     return entry.withId(id);

@@ -101,7 +101,7 @@ abstract final class InitialBinding {
     );
     Get.put<SpeechProvider>(speech ?? DeviceSpeechProvider(), permanent: true);
     // Register any later import services above this line:
-    // StartupService must be created last, because init() runs a first scan.
+    // StartupService must be created last: init() starts a first scan.
     await Get.putAsync(
         () => StartupService(
                 recurring: recurring, database: database, smsImport: smsImport)

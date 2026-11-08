@@ -10,6 +10,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 
 import '../helpers/fake_sms_inbox.dart';
+import '../helpers/fixtures.dart';
 import '../helpers/sms_fixtures.dart';
 import '../helpers/test_services.dart';
 
@@ -113,6 +114,22 @@ void main() {
     expect(pending.map((p) => p.suggestedCategoryId), everyElement(5));
   });
 
+  test('a category learned from a received CliQ is not offered when sending',
+      () async {
+    await Get.find<DatabaseService>().db.insert('learned_categories', {
+      'name_key': 'cliq:RANA OMAR SALEH',
+      'category_id': salaryCategoryId,
+    });
+    add(smsCliqReceived, DateTime(2026, 11, 2, 1));
+    add(smsCliqSent.replaceFirst('SAMI KHALED HADDAD', 'RANA OMAR SALEH'),
+        DateTime(2026, 11, 2, 2));
+    expect(await service.scan(now), 2);
+    final byType = {for (final p in await imports.getPending()) p.smsType!: p};
+    expect(byType[BankSmsType.cliqReceived]!.suggestedCategoryId,
+        salaryCategoryId);
+    expect(byType[BankSmsType.cliqSent]!.suggestedCategoryId, isNull);
+  });
+
   test('scan point follows the newest message read', () async {
     add(smsCard, DateTime(2026, 11, 2));
     add(smsAnnouncement, DateTime(2026, 11, 3));
@@ -120,6 +137,25 @@ void main() {
     expect(await imports.scanPoint(), DateTime(2026, 11, 3));
     expect(await service.scan(now), 0);
     expect(await imports.scanPoint(), DateTime(2026, 11, 3));
+  });
+
+  test('a future-dated message never moves the scan point past now',
+      () async {
+    add(smsCard, DateTime(2026, 11, 2));
+    add(smsCliqSent, DateTime(2026, 11, 12));
+    expect(await service.scan(now), 1);
+    expect(await imports.scanPoint(), DateTime(2026, 11, 2));
+    // A message that arrives later is still imported...
+    add(smsFee, DateTime(2026, 11, 9, 9));
+    expect(await service.scan(now), 1);
+    expect(await imports.scanPoint(), DateTime(2026, 11, 9, 9));
+    // ...and the future-dated one once its time has come, exactly once.
+    expect(await service.scan(DateTime(2026, 11, 13)), 1);
+    expect(await service.scan(DateTime(2026, 11, 13)), 0);
+    final sent = (await imports.getPending())
+        .where((p) => p.smsType == BankSmsType.cliqSent);
+    expect(sent, hasLength(1));
+    expect(await imports.scanPoint(), DateTime(2026, 11, 12));
   });
 
   test('a failing inbox read leaves the scan point alone', () async {
