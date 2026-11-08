@@ -45,14 +45,14 @@ void main() {
     expect(find.text('عملية جديدة'), findsOneWidget);
 
     await tester.enterText(find.byKey(const ValueKey('amount-field')), '5');
-    await tester.tap(find.text('أكل'));
+    await tester.tap(find.text('طعام'));
     await tester.pump();
     await tester.tap(find.text('حفظ'));
     await idle(tester);
     await idle(tester);
 
     expect(find.text('المتبقي من الراتب'), findsOneWidget);
-    expect(find.text('أكل'), findsOneWidget);
+    expect(find.text('طعام'), findsOneWidget);
     expect(find.textContaining('-5.000'), findsWidgets);
   });
 
@@ -64,7 +64,7 @@ void main() {
     await tester.tap(find.text('العمليات'));
     await brief(tester);
     // RTL: end-to-start is a swipe towards the right.
-    await tester.drag(find.text('أكل'), const Offset(600, 0));
+    await tester.drag(find.text('طعام'), const Offset(600, 0));
     await brief(tester);
     expect(find.text('تراجع'), findsOneWidget);
 
@@ -84,7 +84,7 @@ void main() {
     await tester.tap(find.text('الميزانية'));
     await idle(tester);
     expect(find.text('إضافة ميزانية'), findsOneWidget);
-    expect(find.text('أكل'), findsOneWidget);
+    expect(find.text('طعام'), findsOneWidget);
   });
 
   testWidgets('Home warns when a budget is nearly used up', (tester) async {
@@ -94,7 +94,7 @@ void main() {
       await Get.find<TransactionRepository>().add(expense(9000, DateTime.now()));
     });
     await idle(tester);
-    expect(find.text('صرفت 90% من ميزانية أكل'), findsOneWidget);
+    expect(find.text('صرفت 90% من ميزانية طعام'), findsOneWidget);
   });
 
   testWidgets('saving a favorite puts a one-tap button on Home', (tester) async {
@@ -102,7 +102,7 @@ void main() {
     await tester.tap(find.byTooltip('إضافة عملية'));
     await idle(tester);
     await tester.enterText(find.byKey(const ValueKey('amount-field')), '1.5');
-    await tester.tap(find.text('أكل'));
+    await tester.tap(find.text('طعام'));
     await tester.enterText(find.widgetWithText(TextField, 'ملاحظة (اختياري)'), 'قهوة');
     await tester.tap(find.byType(Checkbox));
     await tester.pump();
@@ -139,7 +139,7 @@ void main() {
     await idle(tester);
     await tester.tap(find.text('إضافة ميزانية'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('أكل'));
+    await tester.tap(find.text('طعام'));
     await tester.pumpAndSettle();
     await tester.enterText(find.byType(TextField), '10');
     await tester.tap(find.text('حفظ'));
@@ -158,7 +158,7 @@ void main() {
         () => Get.find<TransactionRepository>().add(expense(5000, DateTime.now())));
     await tester.tap(find.text('التقارير'));
     await idle(tester);
-    expect(find.text('أكل'), findsOneWidget);
+    expect(find.text('طعام'), findsOneWidget);
     expect(find.text('100%'), findsOneWidget);
   });
 

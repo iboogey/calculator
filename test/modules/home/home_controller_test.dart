@@ -33,7 +33,7 @@ void main() {
     final c = await open(DateTime(2026, 10, 15));
     expect(c.period.value!.key, '2026-10');
     expect(c.summary.value!.remaining, 650000);
-    expect(c.categoriesById[foodCategoryId]!.name, 'أكل');
+    expect(c.categoriesById[foodCategoryId]!.name, 'طعام');
   });
 
   test('reloads after a change anywhere in the database', () async {

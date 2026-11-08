@@ -73,7 +73,7 @@ void main() {
     await Get.find<BudgetRepository>().setLimit(foodCategoryId, 10000);
     await Get.find<TransactionRepository>().add(expense(8800, DateTime.now()));
     final home = await openHome();
-    expect(home.urgentBudget.value!.category.name, 'أكل');
+    expect(home.urgentBudget.value!.category.name, 'طعام');
     expect(home.urgentBudget.value!.percent, 88);
   });
 
