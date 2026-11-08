@@ -6,9 +6,12 @@ import '../../../data/models/quick_template.dart';
 import '../../../routes/app_routes.dart';
 import '../../../widgets/app_bottom_nav.dart';
 import '../../../widgets/section_header.dart';
+import '../../debts/controllers/debts_controller.dart';
 import '../controllers/home_controller.dart';
 import '../widgets/balance_card.dart';
 import '../widgets/budget_alert_banner.dart';
+import '../widgets/debts_card.dart';
+import '../widgets/due_obligation_banner.dart';
 import '../widgets/month_end_banner.dart';
 import '../widgets/quick_templates_row.dart';
 import '../widgets/recent_transactions.dart';
@@ -40,7 +43,24 @@ class HomeView extends GetView<HomeController> {
                 summary: summary,
                 currency: controller.currency,
                 onSavingsTap: controller.openSavings,
+                debts: controller.debtTotals.value,
+                showSettled: controller.showSettled.value,
+                onToggleSettled: controller.toggleSettled,
               ),
+              const SizedBox(height: 12),
+              DebtsCard(
+                totals: controller.debtTotals.value,
+                currency: controller.currency,
+                onTap: controller.openDebts,
+              ),
+              if (controller.dueObligation.value case final due?) ...[
+                const SizedBox(height: 12),
+                DueObligationBanner(
+                  due: due,
+                  currency: controller.currency,
+                  onTap: () => controller.openDebts(DebtsTab.obligations),
+                ),
+              ],
               if (controller.monthEndOffer.value case final offer?) ...[
                 const SizedBox(height: 12),
                 MonthEndBanner(
