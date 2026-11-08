@@ -12,4 +12,7 @@ abstract final class Routes {
   static const goalDetail = '/goal-detail';
   static const monthEnd = '/month-end';
   static const settings = '/settings';
+  static const debts = '/debts';
+  static const debtPerson = '/debt-person';
+  static const obligationForm = '/obligation-form';
 }

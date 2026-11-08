@@ -2,6 +2,8 @@ import 'package:get/get.dart';
 
 import '../modules/budgets/bindings/budgets_binding.dart';
 import '../modules/budgets/views/budgets_view.dart';
+import '../modules/debts/bindings/debts_binding.dart';
+import '../modules/debts/views/debts_view.dart';
 import '../modules/goal_detail/bindings/goal_detail_binding.dart';
 import '../modules/goal_detail/views/goal_detail_view.dart';
 import '../modules/goal_form/bindings/goal_form_binding.dart';
@@ -87,6 +89,11 @@ abstract final class AppPages {
       name: Routes.goalDetail,
       page: () => const GoalDetailView(),
       binding: GoalDetailBinding(),
+    ),
+    GetPage(
+      name: Routes.debts,
+      page: () => const DebtsView(),
+      binding: DebtsBinding(),
     ),
     GetPage(
       name: Routes.monthEnd,

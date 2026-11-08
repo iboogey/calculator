@@ -1,5 +1,5 @@
 import 'package:calculator/app/core/utils/currencies.dart';
-import 'package:calculator/app/modules/transaction_form/widgets/amount_field.dart';
+import 'package:calculator/app/widgets/amount_field.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 

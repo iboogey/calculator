@@ -4,7 +4,7 @@ import 'package:get/get.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/date_utils.dart';
 import '../controllers/transaction_form_controller.dart';
-import '../widgets/amount_field.dart';
+import '../../../widgets/amount_field.dart';
 import '../../../widgets/category_grid.dart';
 import '../../../widgets/kind_toggle.dart';
 

@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import '../../../core/theme/app_colors.dart';
-import '../../../core/utils/amount_input.dart';
-import '../../../core/utils/currencies.dart';
+import '../core/theme/app_colors.dart';
+import '../core/utils/amount_input.dart';
+import '../core/utils/currencies.dart';
 
 /// The big amount field, e.g. "7.25 د.أ". Typing uses the phone's own number
 /// keyboard.
