@@ -1,5 +1,7 @@
 import 'package:calculator/app/app_widget.dart';
+import 'package:calculator/app/data/models/enums.dart';
 import 'package:calculator/app/data/repositories/budget_repository.dart';
+import 'package:calculator/app/modules/home/widgets/debts_card.dart';
 import 'package:calculator/app/data/repositories/transaction_repository.dart';
 import 'package:get/get.dart';
 
@@ -126,7 +128,7 @@ void main() {
 
   testWidgets('owing the university: add, pay part as expense, Home updates', (tester) async {
     await boot(tester);
-    await tester.tap(find.text('الديون'));
+    await tester.tap(find.byType(DebtsCard));
     await idle(tester);
     await tester.tap(find.text('عليّ'));
     await idle(tester);
@@ -153,13 +155,16 @@ void main() {
     await idle(tester);
     await idle(tester);
 
-    expect(find.textContaining('-300.000'), findsWidgets);
+    final all = await tester.runAsync(Get.find<TransactionRepository>().getAll);
+    expect(all, hasLength(1));
+    expect(all!.single.amount, 300000);
+    expect(all.single.kind, TransactionKind.expense);
     expect(textIgnoringBidi('المستحق عليّ 300.000'), findsOneWidget);
   });
 
   testWidgets('lending to a person never changes the Home balance', (tester) async {
     await boot(tester);
-    await tester.tap(find.text('الديون'));
+    await tester.tap(find.byType(DebtsCard));
     await idle(tester);
     await tester.tap(find.text('إضافة شخص'));
     await idle(tester);
@@ -185,7 +190,11 @@ void main() {
     await idle(tester);
 
     expect(find.text('المتبقي من الراتب'), findsOneWidget);
-    expect(find.textContaining('-50.000'), findsNothing);
+    expect(textIgnoringBidi('0.000 د.أ'), findsWidgets);
+    expect(
+        textIgnoringBidi('دخل 0.000 · مصاريف 0.000'), findsOneWidget);
+    final all = await tester.runAsync(Get.find<TransactionRepository>().getAll);
+    expect(all, isEmpty);
     await tester.tap(find.text('بعد تسوية الديون'));
     await idle(tester);
     expect(textIgnoringBidi('+ لي 50.000'), findsOneWidget);
