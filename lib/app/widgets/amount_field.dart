@@ -16,6 +16,7 @@ class AmountField extends StatelessWidget {
     this.autofocus = false,
     this.focusNode,
     this.label = 'المبلغ',
+    this.readOnly = false,
   });
 
   final TextEditingController controller;
@@ -26,6 +27,7 @@ class AmountField extends StatelessWidget {
   final bool autofocus;
   final FocusNode? focusNode;
   final String label;
+  final bool readOnly;
 
   static const _style = TextStyle(
       fontSize: 36, fontWeight: FontWeight.w700, color: AppColors.ink);
@@ -49,6 +51,7 @@ class AmountField extends StatelessWidget {
                   controller: controller,
                   focusNode: focusNode,
                   autofocus: autofocus,
+                  readOnly: readOnly,
                   keyboardType:
                       const TextInputType.numberWithOptions(decimal: true),
                   textInputAction: TextInputAction.done,

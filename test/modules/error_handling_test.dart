@@ -21,7 +21,10 @@ void main() {
 
   test('a failed save shows a message and reports false', () async {
     final c = Get.put(TransactionFormController(
-        transactions: Get.find(), categories: Get.find(), settings: Get.find()));
+        transactions: Get.find(),
+        categories: Get.find(),
+        settings: Get.find(),
+        debts: Get.find()));
     await c.ready;
     c.amountController.text = '5';
     c.selectCategory(foodCategoryId);
@@ -38,6 +41,7 @@ void main() {
       categories: Get.find(),
       settings: Get.find(),
       database: Get.find(),
+      debts: Get.find(),
     ));
     await c.load();
     final shown = c.groups.expand((g) => g.transactions).single;

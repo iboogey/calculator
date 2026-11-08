@@ -18,7 +18,8 @@ class TransactionFormView extends GetView<TransactionFormController> {
         title: Obx(() =>
             Text(controller.isEditing.value ? 'تعديل عملية' : 'عملية جديدة')),
         actions: [
-          Obx(() => controller.isEditing.value
+          Obx(() => controller.isEditing.value &&
+                  controller.linkedTitle.value == null
               ? IconButton(
                   tooltip: 'حذف',
                   icon: const Icon(Icons.delete_outline),
@@ -34,15 +35,29 @@ class TransactionFormView extends GetView<TransactionFormController> {
               child: ListView(
                 padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
                 children: [
-                  Obx(() => KindToggle(
-                      value: controller.kind.value, onChanged: controller.setKind)),
-                  const SizedBox(height: 12),
-                  AmountField(
-                    controller: controller.amountController,
-                    currency: controller.currency,
-                    decimals: () => controller.inputDecimals,
-                    autofocus: controller.editId == null,
-                  ),
+                  Obx(() {
+                    final title = controller.linkedTitle.value;
+                    if (title != null) {
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 12),
+                        child: Text('مرتبطة بتسديد «$title» — عدّلها من الديون',
+                            style: const TextStyle(color: AppColors.muted)),
+                      );
+                    }
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: KindToggle(
+                          value: controller.kind.value,
+                          onChanged: controller.setKind),
+                    );
+                  }),
+                  Obx(() => AmountField(
+                        readOnly: controller.linkedTitle.value != null,
+                        controller: controller.amountController,
+                        currency: controller.currency,
+                        decimals: () => controller.inputDecimals,
+                        autofocus: controller.editId == null,
+                      )),
                   const SizedBox(height: 12),
                   const Text('التصنيف',
                       style: TextStyle(color: AppColors.muted, fontSize: 13)),

@@ -1,5 +1,7 @@
 import 'package:calculator/app/core/utils/date_utils.dart';
 import 'package:calculator/app/data/models/enums.dart';
+import 'package:calculator/app/data/models/obligation.dart';
+import 'package:calculator/app/data/repositories/debt_repository.dart';
 import 'package:calculator/app/data/repositories/transaction_repository.dart';
 import 'package:calculator/app/modules/transaction_form/controllers/transaction_form_controller.dart';
 import 'package:calculator/app/services/settings_service.dart';
@@ -17,6 +19,7 @@ void main() {
       transactions: Get.find(),
       categories: Get.find(),
       settings: Get.find(),
+      debts: Get.find(),
       editId: editId,
     ));
     await controller.ready;
@@ -130,5 +133,37 @@ void main() {
     final saved = (await repo().getAll()).single;
     expect(saved.amount, 1255);
     expect(saved.categoryId, 2);
+  });
+  test("editing a payment's expense keeps its amount and kind but saves the new category",
+      () async {
+    final debts = Get.find<DebtRepository>();
+    final o = await debts.addObligation(Obligation(
+        title: 'قسط', amount: 50000, createdAt: DateTime(2026, 10, 1)));
+    await debts.pay(
+        obligationId: o.id!,
+        amount: 10000,
+        date: DateTime(2026, 10, 5),
+        expenseCategoryId: foodCategoryId);
+    final id = (await debts.linkedExpenses()).keys.single;
+    final c = await open(editId: id);
+    expect(c.linkedTitle.value, 'قسط');
+    c.amountController.text = '99';
+    c.setKind(TransactionKind.income);
+    c.selectCategory(2);
+    c.noteController.text = 'ملاحظة';
+    expect(await c.save(), isTrue);
+    final saved = (await repo().getById(id))!;
+    expect(saved.amount, 10000);
+    expect(saved.kind, TransactionKind.expense);
+    expect(saved.categoryId, 2);
+    expect(saved.note, 'ملاحظة');
+    expect(await c.delete(), isFalse);
+    expect(await repo().getById(id), isNotNull);
+  });
+
+  test('an unlinked record has no linked title', () async {
+    final existing = await repo().add(expense(5000, DateTime(2026, 9, 20)));
+    final c = await open(editId: existing.id);
+    expect(c.linkedTitle.value, isNull);
   });
 }

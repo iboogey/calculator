@@ -10,6 +10,7 @@ class TransactionFormBinding extends Bindings {
           transactions: Get.find(),
           categories: Get.find(),
           settings: Get.find(),
+          debts: Get.find(),
           editId: args is int ? args : null,
         ));
   }

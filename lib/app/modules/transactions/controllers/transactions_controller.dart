@@ -7,6 +7,7 @@ import '../../../core/utils/currencies.dart';
 import '../../../data/models/transaction_category.dart';
 import '../../../data/models/transaction_record.dart';
 import '../../../data/repositories/category_repository.dart';
+import '../../../data/repositories/debt_repository.dart';
 import '../../../data/repositories/transaction_repository.dart';
 import '../../../routes/app_routes.dart';
 import '../../../services/database_service.dart';
@@ -19,6 +20,7 @@ class TransactionsController extends GetxController {
     required this.categories,
     required this.settings,
     required this.database,
+    required this.debts,
     DateTime Function()? clock,
   }) : _clock = clock ?? DateTime.now;
 
@@ -26,11 +28,15 @@ class TransactionsController extends GetxController {
   final CategoryRepository categories;
   final SettingsService settings;
   final DatabaseService database;
+  final DebtRepository debts;
   final DateTime Function() _clock;
 
   final period = Rxn<Period>();
   final groups = <DayGroup>[].obs;
   final categoriesById = <int, TransactionCategory>{}.obs;
+
+  /// Expenses owned by an obligation payment: transaction id -> obligation title.
+  final linked = <int, String>{}.obs;
 
   List<TransactionRecord> _items = const [];
 
@@ -59,6 +65,7 @@ class TransactionsController extends GetxController {
     final items = await transactions.getBetween(current.start, current.end);
     final allCategories = await categories.getAll(includeArchived: true);
     categoriesById.assignAll({for (final c in allCategories) c.id!: c});
+    linked.assignAll(await debts.linkedExpenses());
     _items = items;
     groups.assignAll(DayGroup.group(items));
   }
@@ -75,7 +82,10 @@ class TransactionsController extends GetxController {
 
   /// Removes the row immediately (so a swipe-to-dismiss can finish), then
   /// deletes it from the database. On failure the row comes back.
+  bool canDelete(TransactionRecord t) => !linked.containsKey(t.id);
+
   Future<void> delete(TransactionRecord record) async {
+    if (!canDelete(record)) return;
     final before = _items;
     _items = _items.where((t) => t.id != record.id).toList();
     groups.assignAll(DayGroup.group(_items));
