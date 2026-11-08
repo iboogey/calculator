@@ -3,6 +3,7 @@ import 'package:sqflite/sqflite.dart';
 
 import '../data/providers/file_exchange_provider.dart';
 import '../data/providers/notification_provider.dart';
+import '../data/providers/secret_store.dart';
 import '../data/providers/sms_inbox_provider.dart';
 import '../data/repositories/budget_repository.dart';
 import '../data/repositories/category_repository.dart';
@@ -32,6 +33,7 @@ abstract final class InitialBinding {
     NotificationProvider? notifications,
     FileExchangeProvider? files,
     SmsInboxProvider? smsInbox,
+    SecretStore? secrets,
   }) async {
     final database = await Get.putAsync(
         () => DatabaseService(factory: factory, path: path).init(),
@@ -71,6 +73,7 @@ abstract final class InitialBinding {
     final inbox = Get.put<SmsInboxProvider>(
         smsInbox ?? DeviceSmsInboxProvider(),
         permanent: true);
+    Get.put<SecretStore>(secrets ?? DeviceSecretStore(), permanent: true);
     final smsImport = Get.put(
       SmsImportService(
         inbox: inbox,
