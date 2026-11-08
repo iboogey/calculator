@@ -24,6 +24,7 @@ void main() {
       budgets: Get.find(),
       settings: Get.find(),
       database: Get.find(),
+      debts: Get.find(),
     ));
     await c.load();
     return c;
@@ -31,11 +32,12 @@ void main() {
 
   test('saving with "save as favorite" also creates a favorite', () async {
     final form = Get.put(TransactionFormController(
-        transactions: Get.find(), categories: Get.find(), settings: Get.find()));
+        transactions: Get.find(),
+        categories: Get.find(),
+        settings: Get.find(),
+        debts: Get.find()));
     await form.ready;
-    for (final key in ['1', '.', '5']) {
-      form.pressKey(key);
-    }
+    form.amountController.text = '1.5';
     form.selectCategory(foodCategoryId);
     form.noteController.text = 'قهوة';
     form.saveAsFavorite.value = true;
@@ -48,9 +50,12 @@ void main() {
 
   test('a favorite without a note is named after its category', () async {
     final form = Get.put(TransactionFormController(
-        transactions: Get.find(), categories: Get.find(), settings: Get.find()));
+        transactions: Get.find(),
+        categories: Get.find(),
+        settings: Get.find(),
+        debts: Get.find()));
     await form.ready;
-    form.pressKey('3');
+    form.amountController.text = '3';
     form.selectCategory(2);
     form.saveAsFavorite.value = true;
     await form.save();
@@ -75,7 +80,7 @@ void main() {
     await Get.find<BudgetRepository>().setLimit(foodCategoryId, 10000);
     await Get.find<TransactionRepository>().add(expense(8800, DateTime.now()));
     final home = await openHome();
-    expect(home.urgentBudget.value!.category.name, 'أكل');
+    expect(home.urgentBudget.value!.category.name, 'طعام');
     expect(home.urgentBudget.value!.percent, 88);
   });
 

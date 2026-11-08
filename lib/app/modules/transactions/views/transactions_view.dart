@@ -6,6 +6,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/date_utils.dart';
 import '../../../data/models/transaction_record.dart';
 import '../../../routes/app_routes.dart';
+import '../../../services/message_service.dart';
 import '../../../widgets/app_bottom_nav.dart';
 import '../../../widgets/empty_state.dart';
 import '../../../widgets/money_text.dart';
@@ -36,7 +37,7 @@ class TransactionsView extends GetView<TransactionsController> {
         if (groups.isEmpty) {
           return const EmptyState(
             icon: Icons.receipt_long_outlined,
-            message: 'ما في عمليات بهالفترة',
+            message: 'لا توجد عمليات في هذه الفترة',
           );
         }
         return ListView.builder(
@@ -61,7 +62,7 @@ class TransactionsView extends GetView<TransactionsController> {
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
       ..showSnackBar(SnackBar(
-        content: const Text('انحذفت العملية'),
+        content: const Text('حُذفت العملية'),
         action: SnackBarAction(
           label: 'تراجع',
           onPressed: () => transactions.undoDelete(record),
@@ -121,6 +122,12 @@ class _DaySection extends StatelessWidget {
                       padding: const EdgeInsets.symmetric(horizontal: 20),
                       child: const Icon(Icons.delete_outline, color: Colors.white),
                     ),
+                    confirmDismiss: (_) async {
+                      if (controller.canDelete(t)) return true;
+                      Get.find<MessageService>().showError(
+                          'هذه العملية مرتبطة بتسديد «${controller.linked[t.id]}»، احذفها من الديون');
+                      return false;
+                    },
                     onDismissed: (_) => onDismissed(t),
                     child: TransactionTile(
                       transaction: t,

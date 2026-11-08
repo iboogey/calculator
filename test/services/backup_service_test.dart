@@ -1,9 +1,13 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:calculator/app/data/models/debt_entry.dart';
+import 'package:calculator/app/data/models/obligation.dart';
 import 'package:calculator/app/data/models/savings_goal.dart';
+import 'package:calculator/app/data/providers/app_database.dart';
 import 'package:calculator/app/data/providers/file_exchange_provider.dart';
 import 'package:calculator/app/data/repositories/budget_repository.dart';
+import 'package:calculator/app/data/repositories/debt_repository.dart';
 import 'package:calculator/app/data/repositories/savings_repository.dart';
 import 'package:calculator/app/data/repositories/transaction_repository.dart';
 import 'package:calculator/app/services/backup_service.dart';
@@ -48,6 +52,108 @@ void main() {
     expect((await Get.find<SavingsRepository>().balances()).values, [100000]);
   });
 
+  Future<void> seedDebts() async {
+    final debts = Get.find<DebtRepository>();
+    final person = await debts.addPerson('سامر');
+    await debts.addEntry(DebtEntry(
+        personId: person.id!,
+        amount: 50000,
+        date: DateTime(2026, 10, 2),
+        createdAt: DateTime(2026, 10, 2)));
+    final o = await debts.addObligation(Obligation(
+        title: 'إيجار', amount: 100000, createdAt: DateTime(2026, 10, 1)));
+    await debts.pay(
+        obligationId: o.id!,
+        amount: 30000,
+        date: DateTime(2026, 10, 3),
+        expenseCategoryId: foodCategoryId);
+  }
+
+  Future<List<int>> debtCounts() async {
+    final debts = Get.find<DebtRepository>();
+    final people = await debts.getPeople();
+    final entries = <Object>[
+      for (final p in people) ...await debts.getEntries(p.id!)
+    ];
+    final obligations = await debts.getObligations();
+    final payments = <Object>[
+      for (final o in obligations) ...await debts.getPayments(o.id!)
+    ];
+    return [people.length, entries.length, obligations.length, payments.length];
+  }
+
+  test('export then restore keeps people, entries, obligations and payments',
+      () async {
+    await seedDebts();
+    final json = await backup().exportJson(DateTime(2026, 10, 4));
+    final before = await transactions().getAll();
+    final debts = Get.find<DebtRepository>();
+    await debts.deletePerson((await debts.getPeople()).single.id!);
+    final o = (await debts.getObligations()).single;
+    for (final p in await debts.getPayments(o.id!)) {
+      await debts.deletePayment(p);
+    }
+    await debts.deleteObligation(o.id!);
+    expect(await debtCounts(), [0, 0, 0, 0]);
+
+    await backup().restore(backup().parse(json));
+    expect(await debtCounts(), [1, 1, 1, 1]);
+    expect(await transactions().getAll(), before);
+    expect((await debts.linkedExpenses()).length, 1);
+  });
+
+  test('a version-1 backup restores with no debts', () async {
+    await seed();
+    final data = jsonDecode(await backup().exportJson(DateTime(2026, 10, 4)))
+        as Map<String, dynamic>;
+    final tables = data['tables'] as Map<String, dynamic>;
+    for (final k in [
+      'debt_people',
+      'debt_entries',
+      'obligations',
+      'obligation_payments'
+    ]) {
+      tables.remove(k);
+    }
+    data['schemaVersion'] = 1;
+    await seedDebts();
+    await backup().restore(backup().parse(jsonEncode(data)));
+    expect(await debtCounts(), [0, 0, 0, 0]);
+    expect((await transactions().getAll()).length, 1);
+  });
+
+  test('a payment pointing at a missing transaction is rejected cleanly',
+      () async {
+    await seedDebts();
+    final data = jsonDecode(await backup().exportJson(DateTime(2026, 10, 4)))
+        as Map<String, dynamic>;
+    final pays = (data['tables'] as Map)['obligation_payments'] as List;
+    (pays.first as Map)['transaction_id'] = 9999;
+    final before = await transactions().getAll();
+    expect(() => backup().parse(jsonEncode(data)),
+        throwsA(isA<BackupFormatException>()));
+    expect(await transactions().getAll(), before);
+    expect(await debtCounts(), [1, 1, 1, 1]);
+  });
+
+  test('an entry pointing at a missing person is rejected', () async {
+    await seedDebts();
+    final data = jsonDecode(await backup().exportJson(DateTime(2026, 10, 4)))
+        as Map<String, dynamic>;
+    (((data['tables'] as Map)['debt_entries'] as List).first as Map)['person_id'] = 9999;
+    expect(() => backup().parse(jsonEncode(data)),
+        throwsA(isA<BackupFormatException>()));
+  });
+
+  test('a version-2 backup missing a debt table is rejected', () async {
+    final data = jsonDecode(await backup().exportJson(DateTime(2026, 10, 4)))
+        as Map<String, dynamic>;
+    (data['tables'] as Map).remove('obligations');
+    expect(() => backup().parse(jsonEncode(data)),
+        throwsA(isA<BackupFormatException>()));
+  });
+
+
   test('a file that is not a backup is rejected', () {
     expect(() => backup().parse('hello'), throwsA(isA<BackupFormatException>()));
     expect(() => backup().parse(jsonEncode({'format': 'other'})),
@@ -57,7 +163,7 @@ void main() {
   test('a backup from a newer app version is rejected', () async {
     final data = jsonDecode(await backup().exportJson(DateTime(2026, 10, 4)))
         as Map<String, Object?>;
-    data['schemaVersion'] = 99;
+    data['schemaVersion'] = AppDatabase.version + 1;
     expect(
       () => backup().parse(jsonEncode(data)),
       throwsA(isA<BackupFormatException>().having(

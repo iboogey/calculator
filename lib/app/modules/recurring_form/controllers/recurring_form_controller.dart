@@ -152,7 +152,7 @@ class RecurringFormController extends GetxController {
         ));
       }
     } on DatabaseException {
-      Get.find<MessageService>().showError('ما قدرنا نحفظ المصروف الثابت');
+      Get.find<MessageService>().showError('تعذّر حفظ المصروف الثابت');
       isSaving.value = false;
       return false;
     }
@@ -178,7 +178,7 @@ class RecurringFormController extends GetxController {
       await recurring.delete(id);
       return true;
     } on DatabaseException {
-      Get.find<MessageService>().showError('ما قدرنا نحذف المصروف الثابت');
+      Get.find<MessageService>().showError('تعذّر حذف المصروف الثابت');
       return false;
     } finally {
       isSaving.value = false;

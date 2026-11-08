@@ -10,7 +10,7 @@ class MessageService extends GetxService {
     lastMessage.value = message;
     if (Get.overlayContext == null) return;
     Get.snackbar(
-      'صار خطأ',
+      'حدث خطأ',
       message,
       snackPosition: SnackPosition.BOTTOM,
       margin: const EdgeInsets.all(16),

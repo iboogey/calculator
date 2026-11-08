@@ -28,7 +28,7 @@ class RecentTransactions extends StatelessWidget {
     if (transactions.isEmpty) {
       return const EmptyState(
         icon: Icons.receipt_long_outlined,
-        message: 'لسا ما سجلت أي عملية. اضغط + لتبدأ',
+        message: 'لم تسجّل أي عملية بعد. اضغط + لتبدأ',
       );
     }
     return Card(

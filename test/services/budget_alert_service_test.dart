@@ -22,7 +22,7 @@ void main() {
   test('warns once at 80 % and once more at 100 %', () async {
     await transactions.add(expense(8000, today));
     await settle();
-    expect(fake.shown.map((n) => n.title), ['قرّبت تخلص ميزانية أكل']);
+    expect(fake.shown.map((n) => n.title), ['اقتربت ميزانية طعام من النفاد']);
 
     await transactions.add(expense(1000, today));
     await settle();
@@ -30,14 +30,14 @@ void main() {
 
     await transactions.add(expense(2000, today));
     await settle();
-    expect(fake.shown.map((n) => n.title).last, 'تجاوزت ميزانية أكل');
+    expect(fake.shown.map((n) => n.title).last, 'تجاوزت ميزانية طعام');
     expect(fake.shown, hasLength(2));
   });
 
   test('jumping straight past the limit sends a single alert', () async {
     await transactions.add(expense(15000, today));
     await settle();
-    expect(fake.shown.single.title, 'تجاوزت ميزانية أكل');
+    expect(fake.shown.single.title, 'تجاوزت ميزانية طعام');
   });
 
   test('categories without a budget never alert', () async {

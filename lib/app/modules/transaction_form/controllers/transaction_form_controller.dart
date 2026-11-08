@@ -4,7 +4,6 @@ import 'package:flutter/widgets.dart';
 import 'package:get/get.dart';
 import 'package:sqflite/sqflite.dart';
 
-import '../../../core/utils/amount_input.dart';
 import '../../../core/utils/currencies.dart';
 import '../../../core/utils/date_utils.dart';
 import '../../../core/utils/money.dart';
@@ -13,6 +12,7 @@ import '../../../data/models/quick_template.dart';
 import '../../../data/models/transaction_category.dart';
 import '../../../data/models/transaction_record.dart';
 import '../../../data/repositories/category_repository.dart';
+import '../../../data/repositories/debt_repository.dart';
 import '../../../data/repositories/transaction_repository.dart';
 import '../../../services/message_service.dart';
 import '../../../services/settings_service.dart';
@@ -23,12 +23,14 @@ class TransactionFormController extends GetxController {
     required this.transactions,
     required this.categories,
     required this.settings,
+    required this.debts,
     this.editId,
   });
 
   final TransactionRepository transactions;
   final CategoryRepository categories;
   final SettingsService settings;
+  final DebtRepository debts;
   final int? editId;
 
   final kind = TransactionKind.expense.obs;
@@ -36,10 +38,16 @@ class TransactionFormController extends GetxController {
   final categoryId = RxnInt();
   final date = DateKeys.dateOnly(DateTime.now()).obs;
   final isEditing = false.obs;
+
+  /// Title of the obligation whose payment owns this expense, if any.
+  final linkedTitle = RxnString();
   final isSaving = false.obs;
   final saveAsFavorite = false.obs;
   final _allCategories = <TransactionCategory>[].obs;
   final noteController = TextEditingController();
+
+  /// The amount field's text; [amountText] follows it.
+  final amountController = TextEditingController();
 
   TransactionRecord? _editing;
 
@@ -52,9 +60,10 @@ class TransactionFormController extends GetxController {
 
   Currency get currency => settings.currency;
 
-  int get _inputDecimals => max(currency.decimals, _editingDecimals);
+  /// Fraction digits the amount field accepts.
+  int get inputDecimals => max(currency.decimals, _editingDecimals);
 
-  int? get amount => Money.parse(amountText.value, decimals: _inputDecimals);
+  int? get amount => Money.parse(amountText.value, decimals: inputDecimals);
 
   bool get canSave =>
       !isSaving.value && amount != null && categoryId.value != null;
@@ -65,6 +74,8 @@ class TransactionFormController extends GetxController {
   @override
   void onInit() {
     super.onInit();
+    amountController.addListener(
+        () => amountText.value = amountController.text);
     ready = _load();
   }
 
@@ -74,11 +85,13 @@ class TransactionFormController extends GetxController {
     final record = await transactions.getById(editId!);
     if (record == null) return;
     _editing = record;
+    linkedTitle.value = (await debts.linkedExpenses())[editId!];
     isEditing.value = true;
     kind.value = record.kind;
-    amountText.value = Money.toEditable(record.amount);
-    final dot = amountText.value.indexOf('.');
-    _editingDecimals = dot == -1 ? 0 : amountText.value.length - dot - 1;
+    final editable = Money.toEditable(record.amount);
+    final dot = editable.indexOf('.');
+    _editingDecimals = dot == -1 ? 0 : editable.length - dot - 1;
+    amountController.text = editable;
     categoryId.value = record.categoryId;
     noteController.text = record.note ?? '';
     date.value = record.date;
@@ -89,11 +102,6 @@ class TransactionFormController extends GetxController {
     kind.value = value;
     categoryId.value = null;
   }
-
-  void pressKey(String key) => amountText.value =
-      AmountInput.append(amountText.value, key, decimals: _inputDecimals);
-
-  void backspace() => amountText.value = AmountInput.backspace(amountText.value);
 
   void selectCategory(int id) => categoryId.value = id;
 
@@ -107,7 +115,7 @@ class TransactionFormController extends GetxController {
     try {
       return await _save();
     } on DatabaseException {
-      Get.find<MessageService>().showError('ما قدرنا نحفظ العملية، جرّب مرة ثانية');
+      Get.find<MessageService>().showError('تعذّر حفظ العملية، حاول مرة أخرى');
       return false;
     } finally {
       isSaving.value = false;
@@ -121,8 +129,8 @@ class TransactionFormController extends GetxController {
     final note = noteController.text.trim();
     final record = TransactionRecord(
       id: _editing?.id,
-      kind: kind.value,
-      amount: value,
+      kind: linkedTitle.value != null ? _editing!.kind : kind.value,
+      amount: linkedTitle.value != null ? _editing!.amount : value,
       categoryId: category,
       date: date.value,
       note: note.isEmpty ? null : note,
@@ -156,13 +164,13 @@ class TransactionFormController extends GetxController {
   /// delete, a save/delete is already running, or the database fails.
   Future<bool> delete() async {
     final id = _editing?.id;
-    if (id == null || isSaving.value) return false;
+    if (id == null || isSaving.value || linkedTitle.value != null) return false;
     isSaving.value = true;
     try {
       await transactions.delete(id);
       return true;
     } on DatabaseException {
-      Get.find<MessageService>().showError('ما قدرنا نحذف العملية، جرّب مرة ثانية');
+      Get.find<MessageService>().showError('تعذّر حذف العملية، حاول مرة أخرى');
       return false;
     } finally {
       isSaving.value = false;
@@ -172,6 +180,7 @@ class TransactionFormController extends GetxController {
   @override
   void onClose() {
     noteController.dispose();
+    amountController.dispose();
     super.onClose();
   }
 }

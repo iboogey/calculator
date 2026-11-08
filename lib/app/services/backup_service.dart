@@ -9,6 +9,10 @@ import '../data/providers/app_database.dart';
 import '../data/providers/file_exchange_provider.dart';
 import '../data/models/app_settings.dart';
 import '../data/models/budget.dart';
+import '../data/models/debt_entry.dart';
+import '../data/models/debt_person.dart';
+import '../data/models/obligation.dart';
+import '../data/models/obligation_payment.dart';
 import '../data/models/quick_template.dart';
 import '../data/models/recurring_rule.dart';
 import '../data/models/savings_goal.dart';
@@ -64,10 +68,22 @@ class BackupService extends GetxService {
     'savings_movements',
     'quick_templates',
     'budget_alerts_sent',
+    'debt_people',
+    'debt_entries',
+    'obligations',
+    'obligation_payments',
     'settings',
   ];
 
-  static const _notABackup = 'الملف مش نسخة احتياطية من مصاريفي';
+  /// Tables a version-1 backup does not have.
+  static const _debtTables = {
+    'debt_people',
+    'debt_entries',
+    'obligations',
+    'obligation_payments',
+  };
+
+  static const _notABackup = 'هذا الملف ليس نسخة احتياطية من مصاريفي';
 
   Future<String> exportJson(DateTime now) async {
     final data = <String, Object?>{};
@@ -113,14 +129,17 @@ class BackupService extends GetxService {
     if (version is! int) throw const BackupFormatException(_notABackup);
     if (version > AppDatabase.version) {
       throw const BackupFormatException(
-          'النسخة من إصدار أحدث للتطبيق. حدّث التطبيق أول');
+          'النسخة من إصدار أحدث للتطبيق. حدّث التطبيق أولًا');
     }
     final rawTables = decoded['tables'];
     if (rawTables is! Map) throw const BackupFormatException(_notABackup);
 
     final parsed = <String, List<Map<String, Object?>>>{};
     for (final table in tables) {
-      final rows = rawTables[table];
+      var rows = rawTables[table];
+      if (rows == null && version < 2 && _debtTables.contains(table)) {
+        rows = const [];
+      }
       if (rows is! List) throw const BackupFormatException(_notABackup);
       final list = <Map<String, Object?>>[];
       for (final row in rows) {
@@ -133,6 +152,7 @@ class BackupService extends GetxService {
       throw const BackupFormatException(_notABackup);
     }
     _checkTypes(parsed);
+    _checkReferences(parsed);
     final exportedAt = decoded['exportedAt'];
     return BackupSummary(
       exportedAt: (exportedAt is String ? DateTime.tryParse(exportedAt) : null) ??
@@ -154,6 +174,10 @@ class BackupService extends GetxService {
       'budgets': Budget.fromMap,
       'savings_movements': SavingsMovement.fromMap,
       'quick_templates': QuickTemplate.fromMap,
+      'debt_people': DebtPerson.fromMap,
+      'debt_entries': DebtEntry.fromMap,
+      'obligations': Obligation.fromMap,
+      'obligation_payments': ObligationPayment.fromMap,
       'settings': AppSettings.fromMap,
       'budget_alerts_sent': (row) {
         if (row['category_id'] is! int ||
@@ -170,6 +194,22 @@ class BackupService extends GetxService {
     } catch (_) {
       throw const BackupFormatException(_notABackup);
     }
+  }
+
+  /// Refuses rows that point at a row the file does not contain.
+  static void _checkReferences(Map<String, List<Map<String, Object?>>> tables) {
+    Set<Object?> ids(String table) =>
+        {for (final row in tables[table]!) row['id']};
+    final people = ids('debt_people');
+    final obligations = ids('obligations');
+    final transactions = ids('transactions');
+    final ok = tables['debt_entries']!
+            .every((r) => people.contains(r['person_id'])) &&
+        tables['obligation_payments']!.every((r) =>
+            obligations.contains(r['obligation_id']) &&
+            (r['transaction_id'] == null ||
+                transactions.contains(r['transaction_id'])));
+    if (!ok) throw const BackupFormatException(_notABackup);
   }
 
   /// Replaces all data with [backup] in one transaction: if anything fails,

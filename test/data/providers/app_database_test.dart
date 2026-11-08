@@ -9,7 +9,7 @@ void main() {
     final categories = await db.query('categories', orderBy: 'id');
     expect(categories.where((c) => c['kind'] == 'expense'), hasLength(8));
     expect(categories.where((c) => c['kind'] == 'income'), hasLength(2));
-    expect(categories.first['name'], 'أكل');
+    expect(categories.first['name'], 'طعام');
     expect(categories[8]['name'], 'راتب');
 
     final goals = await db.query('savings_goals');

@@ -1,25 +1,31 @@
 import 'money.dart';
 
-/// Rules for typing an amount on the keypad, one key at a time.
+/// Rules for typing an amount into the amount field.
 abstract final class AmountInput {
-  /// Returns the text after pressing [key] ("0"–"9" or "."), or [current]
-  /// unchanged when that key would make the amount invalid.
-  static String append(String current, String key, {required int decimals}) {
-    if (key == '.') {
-      if (decimals == 0 || current.contains('.')) return current;
-      return current.isEmpty ? '0.' : '$current.';
-    }
-    if (current == '0') return key;
-    final next = '$current$key';
-    final dot = next.indexOf('.');
-    final whole = dot == -1 ? next : next.substring(0, dot);
-    final fraction = dot == -1 ? '' : next.substring(dot + 1);
-    if (whole.length > Money.maxWholeDigits || fraction.length > decimals) {
-      return current;
-    }
-    return next;
-  }
+  static final RegExp _shape = RegExp(r'^\d*\.?\d*$');
+  static final RegExp _leadingZeros = RegExp(r'^0+(?=\d)');
 
-  static String backspace(String current) =>
-      current.isEmpty ? current : current.substring(0, current.length - 1);
+  /// Cleans what the keyboard produced: Arabic-Indic digits become 0–9, a
+  /// "," or "٫" becomes ".", a lone leading "." becomes "0." and extra
+  /// leading zeros go ("05" → "5").
+  ///
+  /// Returns null when the text cannot be an amount in a currency with
+  /// [decimals] fraction digits (letters, two dots, too many digits), so the
+  /// field keeps its previous text.
+  static String? clean(String raw, {required int decimals}) {
+    final text = Money.toAsciiDigits(
+        raw.replaceAll(',', '.').replaceAll('٬', '.').trim());
+    if (text.isEmpty) return '';
+    if (!_shape.hasMatch(text)) return null;
+    final dot = text.indexOf('.');
+    if (dot != -1 && decimals == 0) return null;
+    var whole = dot == -1 ? text : text.substring(0, dot);
+    final fraction = dot == -1 ? '' : text.substring(dot + 1);
+    whole = whole.replaceFirst(_leadingZeros, '');
+    if (whole.isEmpty && dot != -1) whole = '0';
+    if (whole.length > Money.maxWholeDigits || fraction.length > decimals) {
+      return null;
+    }
+    return dot == -1 ? whole : '$whole.$fraction';
+  }
 }

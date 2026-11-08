@@ -3,9 +3,8 @@ import 'package:get/get.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/date_utils.dart';
-import '../../../widgets/amount_keypad.dart';
 import '../controllers/transaction_form_controller.dart';
-import '../widgets/amount_display.dart';
+import '../../../widgets/amount_field.dart';
 import '../../../widgets/category_grid.dart';
 import '../../../widgets/kind_toggle.dart';
 
@@ -19,7 +18,8 @@ class TransactionFormView extends GetView<TransactionFormController> {
         title: Obx(() =>
             Text(controller.isEditing.value ? 'تعديل عملية' : 'عملية جديدة')),
         actions: [
-          Obx(() => controller.isEditing.value
+          Obx(() => controller.isEditing.value &&
+                  controller.linkedTitle.value == null
               ? IconButton(
                   tooltip: 'حذف',
                   icon: const Icon(Icons.delete_outline),
@@ -35,12 +35,29 @@ class TransactionFormView extends GetView<TransactionFormController> {
               child: ListView(
                 padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
                 children: [
-                  Obx(() => KindToggle(
-                      value: controller.kind.value, onChanged: controller.setKind)),
-                  const SizedBox(height: 12),
-                  Obx(() => AmountDisplay(
-                      text: controller.amountText.value,
-                      currency: controller.currency)),
+                  Obx(() {
+                    final title = controller.linkedTitle.value;
+                    if (title != null) {
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 12),
+                        child: Text('مرتبطة بتسديد «$title» — عدّلها من الديون',
+                            style: const TextStyle(color: AppColors.muted)),
+                      );
+                    }
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: KindToggle(
+                          value: controller.kind.value,
+                          onChanged: controller.setKind),
+                    );
+                  }),
+                  Obx(() => AmountField(
+                        readOnly: controller.linkedTitle.value != null,
+                        controller: controller.amountController,
+                        currency: controller.currency,
+                        decimals: () => controller.inputDecimals,
+                        autofocus: controller.editId == null,
+                      )),
                   const SizedBox(height: 12),
                   const Text('التصنيف',
                       style: TextStyle(color: AppColors.muted, fontSize: 13)),
@@ -56,6 +73,7 @@ class TransactionFormView extends GetView<TransactionFormController> {
                       Expanded(
                         child: TextField(
                           controller: controller.noteController,
+                          textInputAction: TextInputAction.done,
                           decoration: const InputDecoration(
                             hintText: 'ملاحظة (اختياري)',
                             prefixIcon: Icon(Icons.edit_note),
@@ -84,27 +102,17 @@ class TransactionFormView extends GetView<TransactionFormController> {
                           onChanged: (v) =>
                               controller.saveAsFavorite.value = v ?? false,
                           title: const Text(
-                              'احفظها كمفضّلة (زر بضغطة وحدة بالرئيسية)'),
+                              'احفظها في المفضّلة (زر بنقرة واحدة في الرئيسية)'),
                         )),
                 ],
               ),
             ),
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
-              child: Column(
-                children: [
-                  AmountKeypad(
-                    onKey: controller.pressKey,
-                    onBackspace: controller.backspace,
-                    showDot: controller.currency.decimals > 0,
-                  ),
-                  const SizedBox(height: 12),
-                  Obx(() => FilledButton(
-                        onPressed: controller.canSave ? _save : null,
-                        child: const Text('حفظ'),
-                      )),
-                ],
-              ),
+              child: Obx(() => FilledButton(
+                    onPressed: controller.canSave ? _save : null,
+                    child: const Text('حفظ'),
+                  )),
             ),
           ],
         ),

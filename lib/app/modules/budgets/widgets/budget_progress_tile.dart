@@ -28,7 +28,7 @@ class BudgetProgressTile extends StatelessWidget {
   String? get _hint => switch (status.level) {
         BudgetLevel.normal => null,
         BudgetLevel.warning =>
-          'قرّبت توصل للحد — باقي ${MoneyText.label(status.remaining, currency)}',
+          'اقتربت من الحد — المتبقي ${MoneyText.label(status.remaining, currency)}',
         BudgetLevel.over =>
           'تجاوزت الميزانية بـ ${MoneyText.label(-status.remaining, currency)}',
       };

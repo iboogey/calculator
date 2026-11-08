@@ -5,6 +5,7 @@ import '../data/providers/file_exchange_provider.dart';
 import '../data/providers/notification_provider.dart';
 import '../data/repositories/budget_repository.dart';
 import '../data/repositories/category_repository.dart';
+import '../data/repositories/debt_repository.dart';
 import '../data/repositories/recurring_repository.dart';
 import '../data/repositories/savings_repository.dart';
 import '../data/repositories/settings_repository.dart';
@@ -37,6 +38,7 @@ abstract final class InitialBinding {
     final transactions =
         Get.put(TransactionRepository(database), permanent: true);
     Get.put(SavingsRepository(database), permanent: true);
+    Get.put(DebtRepository(database), permanent: true);
     final budgets = Get.put(BudgetRepository(database), permanent: true);
     final recurring = Get.put(RecurringRepository(database), permanent: true);
     Get.put(TemplateRepository(database), permanent: true);

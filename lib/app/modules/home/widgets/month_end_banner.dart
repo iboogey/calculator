@@ -31,13 +31,13 @@ class MonthEndBanner extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'خلص الشهر الماضي وضل معك ${MoneyText.label(amount, currency)}. بدك تحوّل منهم للادخار؟',
+            'انتهى الشهر الماضي وتبقّى معك ${MoneyText.label(amount, currency)}. هل تريد تحويل جزء منه إلى الادخار؟',
             style: const TextStyle(color: AppColors.primaryDark, fontSize: 13),
           ),
           Row(
             mainAxisAlignment: MainAxisAlignment.end,
             children: [
-              TextButton(onPressed: onSkip, child: const Text('مش هلأ')),
+              TextButton(onPressed: onSkip, child: const Text('ليس الآن')),
               FilledButton(
                 style: FilledButton.styleFrom(minimumSize: const Size(0, 40)),
                 onPressed: onSplit,

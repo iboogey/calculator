@@ -19,7 +19,7 @@ class TemplatesView extends GetView<TemplatesController> {
         if (items.isEmpty) {
           return const EmptyState(
             icon: Icons.star_outline,
-            message: 'لما تضيف عملية، اختار "احفظها كمفضّلة" لتصير زر بضغطة وحدة بالرئيسية.',
+            message: 'عند إضافة عملية، اختر "احفظها في المفضّلة" لتصبح زرًّا بنقرة واحدة في الرئيسية.',
           );
         }
         return ListView(

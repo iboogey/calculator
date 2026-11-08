@@ -47,7 +47,7 @@ class TemplatesController extends GetxController {
     try {
       await templates.delete(template.id!);
     } on DatabaseException {
-      Get.find<MessageService>().showError('ما قدرنا نحذف المفضّلة');
+      Get.find<MessageService>().showError('تعذّر حذف المفضّلة');
     }
   }
 

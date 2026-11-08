@@ -11,7 +11,7 @@ class MonthEndView extends GetView<MonthEndController> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('وزّع اللي ضل معك')),
+      appBar: AppBar(title: const Text('وزّع ما تبقّى معك')),
       body: SafeArea(
         child: Obx(() {
           final goals = controller.goals.toList();
@@ -20,11 +20,11 @@ class MonthEndView extends GetView<MonthEndController> {
           return ListView(
             padding: const EdgeInsets.all(20),
             children: [
-              Text('ضل معك من الشهر الماضي ${MoneyText.label(offered, controller.currency)}',
+              Text('تبقّى معك من الشهر الماضي ${MoneyText.label(offered, controller.currency)}',
                   style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
               const SizedBox(height: 4),
               Text(
-                'وزّعت ${MoneyText.label(allocated, controller.currency)} · باقي ${MoneyText.label(offered - allocated, controller.currency)}',
+                'وزّعت ${MoneyText.label(allocated, controller.currency)} · المتبقي ${MoneyText.label(offered - allocated, controller.currency)}',
                 style: TextStyle(
                     color: allocated > offered ? AppColors.danger : AppColors.muted,
                     fontSize: 13),
@@ -44,14 +44,14 @@ class MonthEndView extends GetView<MonthEndController> {
               ],
               TextButton(
                 onPressed: controller.putAllInGeneral,
-                child: const Text('حط الكل بالادخار العام'),
+                child: const Text('ضع الكل في الادخار العام'),
               ),
               const SizedBox(height: 12),
               FilledButton(
                 onPressed: controller.canSave ? _save : null,
                 child: const Text('حفظ'),
               ),
-              TextButton(onPressed: _skip, child: const Text('مش هلأ — خليهم مرحّلين')),
+              TextButton(onPressed: _skip, child: const Text('ليس الآن — اتركه مرحّلًا')),
             ],
           );
         }),

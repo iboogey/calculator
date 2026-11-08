@@ -2,6 +2,10 @@ import 'package:get/get.dart';
 
 import '../modules/budgets/bindings/budgets_binding.dart';
 import '../modules/budgets/views/budgets_view.dart';
+import '../modules/debt_person/bindings/debt_person_binding.dart';
+import '../modules/debt_person/views/debt_person_view.dart';
+import '../modules/debts/bindings/debts_binding.dart';
+import '../modules/debts/views/debts_view.dart';
 import '../modules/goal_detail/bindings/goal_detail_binding.dart';
 import '../modules/goal_detail/views/goal_detail_view.dart';
 import '../modules/goal_form/bindings/goal_form_binding.dart';
@@ -10,6 +14,8 @@ import '../modules/home/bindings/home_binding.dart';
 import '../modules/home/views/home_view.dart';
 import '../modules/month_end/bindings/month_end_binding.dart';
 import '../modules/month_end/views/month_end_view.dart';
+import '../modules/obligation_form/bindings/obligation_form_binding.dart';
+import '../modules/obligation_form/views/obligation_form_view.dart';
 import '../modules/recurring/bindings/recurring_binding.dart';
 import '../modules/recurring/views/recurring_view.dart';
 import '../modules/recurring_form/bindings/recurring_form_binding.dart';
@@ -87,6 +93,22 @@ abstract final class AppPages {
       name: Routes.goalDetail,
       page: () => const GoalDetailView(),
       binding: GoalDetailBinding(),
+    ),
+    GetPage(
+      name: Routes.debts,
+      page: () => const DebtsView(),
+      binding: DebtsBinding(),
+    ),
+    GetPage(
+      name: Routes.debtPerson,
+      page: () => const DebtPersonView(),
+      binding: DebtPersonBinding(),
+    ),
+    GetPage(
+      name: Routes.obligationForm,
+      page: () => const ObligationFormView(),
+      binding: ObligationFormBinding(),
+      fullscreenDialog: true,
     ),
     GetPage(
       name: Routes.monthEnd,

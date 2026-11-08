@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/logic/balance_calculator.dart';
+import '../../../core/logic/debt_summary.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/currencies.dart';
 import '../../../widgets/money_text.dart';
@@ -13,16 +14,28 @@ class BalanceCard extends StatelessWidget {
     required this.summary,
     required this.currency,
     this.onSavingsTap,
+    this.debts,
+    this.showSettled = false,
+    this.onToggleSettled,
   });
 
   final BalanceSummary summary;
   final Currency currency;
   final VoidCallback? onSavingsTap;
+  final DebtTotals? debts;
+  final bool showSettled;
+  final VoidCallback? onToggleSettled;
 
   @override
   Widget build(BuildContext context) {
     String label(int amount) =>
         MoneyText.label(amount, currency, showSymbol: false);
+    final totals = debts;
+    final hasDebts = totals != null && !totals.isEmpty;
+    final settled = showSettled && hasDebts;
+    final big = settled
+        ? DebtSummary.settledRemaining(summary.remaining, totals)
+        : summary.remaining;
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -32,25 +45,38 @@ class BalanceCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('المتبقي من الراتب',
+          Text(settled ? 'المتبقي بعد تسوية الديون' : 'المتبقي من الراتب',
               style: TextStyle(color: AppColors.onPrimaryMuted, fontSize: 13)),
           const SizedBox(height: 4),
           MoneyText(
-            summary.remaining,
+            big,
             currency: currency,
             style: TextStyle(
               fontSize: 34,
               fontWeight: FontWeight.w700,
-              color: summary.remaining < 0 ? AppColors.negativeOnDark : Colors.white,
+              color: big < 0 ? AppColors.negativeOnDark : Colors.white,
             ),
           ),
           const SizedBox(height: 4),
           Text(
-            'دخل ${label(summary.income)} · مصاريف ${label(summary.expenses)}'
-            '${summary.saved == 0 ? '' : ' · للادخار ${label(summary.saved)}'}'
-            '${summary.carriedOver == 0 ? '' : ' · مرحّل ${label(summary.carriedOver)}'}',
+            settled
+                ? 'المتبقي ${label(summary.remaining)} + لي ${label(totals.owedToMe)} − عليّ ${label(totals.iOwe)}'
+                : 'دخل ${label(summary.income)} · مصاريف ${label(summary.expenses)}'
+                    '${summary.saved == 0 ? '' : ' · للادخار ${label(summary.saved)}'}'
+                    '${summary.carriedOver == 0 ? '' : ' · مرحّل ${label(summary.carriedOver)}'}',
             style: const TextStyle(color: AppColors.onPrimaryMuted, fontSize: 12),
           ),
+          if (hasDebts)
+            TextButton(
+              style: TextButton.styleFrom(
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                minimumSize: const Size(0, 36),
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
+              onPressed: onToggleSettled,
+              child: Text(settled ? 'إخفاء' : 'بعد تسوية الديون'),
+            ),
           const SizedBox(height: 16),
           Row(
             children: [
@@ -65,7 +91,7 @@ class BalanceCard extends StatelessWidget {
               const SizedBox(width: 10),
               Expanded(
                 child: _Stat(
-                  label: 'الكلي معك',
+                  label: 'إجمالي ما لديك',
                   amount: summary.total,
                   currency: currency,
                 ),

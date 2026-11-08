@@ -10,6 +10,7 @@ class TransactionsBinding extends Bindings {
           categories: Get.find(),
           settings: Get.find(),
           database: Get.find(),
+          debts: Get.find(),
         ));
   }
 }

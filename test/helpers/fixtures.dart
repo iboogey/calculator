@@ -2,7 +2,7 @@ import 'package:calculator/app/data/models/enums.dart';
 import 'package:calculator/app/data/models/savings_movement.dart';
 import 'package:calculator/app/data/models/transaction_record.dart';
 
-/// Seeded category ids: 1 = أكل (expense), 9 = راتب (income).
+/// Seeded category ids: 1 = طعام (expense), 9 = راتب (income).
 const foodCategoryId = 1;
 const salaryCategoryId = 9;
 

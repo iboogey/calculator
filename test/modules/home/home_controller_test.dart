@@ -1,4 +1,8 @@
+import 'package:calculator/app/data/models/debt_entry.dart';
+import 'package:calculator/app/data/models/obligation.dart';
+import 'package:calculator/app/data/repositories/debt_repository.dart';
 import 'package:calculator/app/data/repositories/transaction_repository.dart';
+import 'package:calculator/app/modules/debts/controllers/debts_controller.dart';
 import 'package:calculator/app/modules/home/controllers/home_controller.dart';
 import 'package:calculator/app/services/settings_service.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -19,6 +23,7 @@ void main() {
       budgets: Get.find(),
       settings: Get.find(),
       database: Get.find(),
+      debts: Get.find(),
       clock: () => now,
     ));
     await controller.load();
@@ -33,7 +38,7 @@ void main() {
     final c = await open(DateTime(2026, 10, 15));
     expect(c.period.value!.key, '2026-10');
     expect(c.summary.value!.remaining, 650000);
-    expect(c.categoriesById[foodCategoryId]!.name, 'أكل');
+    expect(c.categoriesById[foodCategoryId]!.name, 'طعام');
   });
 
   test('reloads after a change anywhere in the database', () async {
@@ -57,5 +62,53 @@ void main() {
     await settings.update(settings.settings.value.copyWith(periodStartDay: 25));
     final c = await open(DateTime(2026, 10, 10));
     expect(c.period.value!.start, DateTime(2026, 9, 25));
+  });
+
+  test('debt totals include people and unpaid obligations', () async {
+    final debts = Get.find<DebtRepository>();
+    final ola = await debts.addPerson('علا');
+    final sami = await debts.addPerson('سامي');
+    await debts.addEntry(DebtEntry(
+        personId: ola.id!,
+        amount: 50000,
+        date: DateTime(2026, 10, 1),
+        createdAt: DateTime(2026, 10, 1)));
+    await debts.addEntry(DebtEntry(
+        personId: sami.id!,
+        amount: -20000,
+        date: DateTime(2026, 10, 1),
+        createdAt: DateTime(2026, 10, 1)));
+    await debts.addObligation(Obligation(
+        title: 'رسوم', amount: 600000, createdAt: DateTime(2026, 10, 1)));
+    final c = await open(DateTime(2026, 10, 15));
+    expect(c.debtTotals.value.owedToMe, 50000);
+    expect(c.debtTotals.value.iOwe, 620000);
+  });
+
+  test('due banner picks the most urgent within 3 days', () async {
+    final debts = Get.find<DebtRepository>();
+    await debts.addObligation(Obligation(
+        title: 'بعيد',
+        amount: 1000,
+        dueDate: DateTime(2026, 10, 30),
+        createdAt: DateTime(2026, 10, 1)));
+    await debts.addObligation(Obligation(
+        title: 'قريب',
+        amount: 2000,
+        dueDate: DateTime(2026, 10, 17),
+        createdAt: DateTime(2026, 10, 1)));
+    final c = await open(DateTime(2026, 10, 15));
+    expect(c.dueObligation.value!.status.obligation.title, 'قريب');
+    expect(c.dueObligation.value!.daysLeft, 2);
+  });
+
+  test('toggleSettled flips and starts off', () async {
+    final c = await open(DateTime(2026, 10, 15));
+    expect(c.showSettled.value, isFalse);
+    c.toggleSettled();
+    expect(c.showSettled.value, isTrue);
+    c.toggleSettled();
+    expect(c.showSettled.value, isFalse);
+    expect(DebtsTab.values, contains(DebtsTab.people));
   });
 }

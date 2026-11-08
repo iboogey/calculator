@@ -1,10 +1,11 @@
+import 'package:flutter/foundation.dart';
 import 'package:path/path.dart' as p;
 import 'package:sqflite/sqflite.dart';
 
 /// Opens the SQLite database, creates the schema for every phase and seeds
 /// first-run data.
 abstract final class AppDatabase {
-  static const int version = 1;
+  static const int version = 2;
   static const String fileName = 'masarifi.db';
 
   static Future<Database> open({DatabaseFactory? factory, String? path}) async {
@@ -17,20 +18,77 @@ abstract final class AppDatabase {
         singleInstance: dbPath != inMemoryDatabasePath,
         onConfigure: (db) => db.execute('PRAGMA foreign_keys = ON'),
         onCreate: _onCreate,
+        onUpgrade: _onUpgrade,
       ),
     );
   }
 
   static Future<void> _onCreate(Database db, int version) async {
     final batch = db.batch();
-    for (final statement in _schema) {
+    for (final statement in [...schemaV1, ...schemaV2]) {
       batch.execute(statement);
     }
     _seed(batch);
     await batch.commit(noResult: true);
   }
 
-  static const _schema = [
+  static Future<void> _onUpgrade(
+    Database db,
+    int oldVersion,
+    int newVersion,
+  ) async {
+    if (oldVersion < 2) {
+      final batch = db.batch();
+      for (final statement in schemaV2) {
+        batch.execute(statement);
+      }
+      await batch.commit(noResult: true);
+    }
+  }
+
+  /// Version 2 additions: debts and obligations.
+  @visibleForTesting
+  static const List<String> schemaV2 = [
+    '''
+    CREATE TABLE debt_people (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL,
+      created_at INTEGER NOT NULL
+    )''',
+    '''
+    CREATE TABLE debt_entries (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      person_id INTEGER NOT NULL REFERENCES debt_people(id) ON DELETE CASCADE,
+      amount INTEGER NOT NULL CHECK (amount <> 0),
+      date TEXT NOT NULL,
+      note TEXT,
+      created_at INTEGER NOT NULL
+    )''',
+    'CREATE INDEX idx_debt_entries_person ON debt_entries(person_id)',
+    '''
+    CREATE TABLE obligations (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      title TEXT NOT NULL,
+      amount INTEGER NOT NULL CHECK (amount > 0),
+      due_date TEXT,
+      note TEXT,
+      created_at INTEGER NOT NULL
+    )''',
+    '''
+    CREATE TABLE obligation_payments (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      obligation_id INTEGER NOT NULL REFERENCES obligations(id) ON DELETE CASCADE,
+      amount INTEGER NOT NULL CHECK (amount > 0),
+      date TEXT NOT NULL,
+      transaction_id INTEGER REFERENCES transactions(id) ON DELETE SET NULL,
+      created_at INTEGER NOT NULL
+    )''',
+    'CREATE INDEX idx_obligation_payments_obligation ON obligation_payments(obligation_id)',
+  ];
+
+  /// Version 1 schema.
+  @visibleForTesting
+  static const List<String> schemaV1 = [
     '''
     CREATE TABLE categories (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -129,7 +187,7 @@ abstract final class AppDatabase {
 
   static void _seed(Batch batch) {
     const categories = [
-      ('أكل', 'food', 0xFFC2410C, 'expense'),
+      ('طعام', 'food', 0xFFC2410C, 'expense'),
       ('مواصلات', 'transport', 0xFF1D4ED8, 'expense'),
       ('فواتير', 'bills', 0xFFB45309, 'expense'),
       ('سكن', 'housing', 0xFF0E3B32, 'expense'),

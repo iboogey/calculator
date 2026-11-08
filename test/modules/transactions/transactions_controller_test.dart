@@ -1,3 +1,5 @@
+import 'package:calculator/app/data/models/obligation.dart';
+import 'package:calculator/app/data/repositories/debt_repository.dart';
 import 'package:calculator/app/data/repositories/transaction_repository.dart';
 import 'package:calculator/app/modules/transactions/controllers/transactions_controller.dart';
 import 'package:calculator/app/services/settings_service.dart';
@@ -16,6 +18,7 @@ void main() {
       categories: Get.find(),
       settings: Get.find(),
       database: Get.find(),
+      debts: Get.find(),
       clock: () => now,
     ));
     await controller.load();
@@ -80,5 +83,29 @@ void main() {
     await repo().add(expense(1000, DateTime(2026, 10, 15)));
     await settle();
     expect(c.period.value!.key, '2026-09');
+  });
+  test("a payment's expense cannot be deleted from the list", () async {
+    final debts = Get.find<DebtRepository>();
+    final o = await debts.addObligation(Obligation(
+        title: 'قسط', amount: 50000, createdAt: DateTime(2026, 10, 1)));
+    await debts.pay(
+        obligationId: o.id!,
+        amount: 10000,
+        date: DateTime(2026, 10, 5),
+        expenseCategoryId: foodCategoryId);
+    await repo().add(expense(1000, DateTime(2026, 10, 5)));
+    final c = await open(DateTime(2026, 10, 15));
+    final all = c.groups.expand((g) => g.transactions).toList();
+    final linkedRow = all.firstWhere((t) => t.amount == 10000);
+    final plain = all.firstWhere((t) => t.amount == 1000);
+    expect(c.linked[linkedRow.id], 'قسط');
+    expect(c.canDelete(linkedRow), isFalse);
+    expect(c.canDelete(plain), isTrue);
+    await c.delete(linkedRow);
+    expect(await repo().getById(linkedRow.id!), isNotNull);
+    expect(c.groups.expand((g) => g.transactions).map((t) => t.id),
+        contains(linkedRow.id));
+    await c.delete(plain);
+    expect(await repo().getById(plain.id!), isNull);
   });
 }

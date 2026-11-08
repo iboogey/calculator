@@ -70,10 +70,10 @@ class GoalDetailController extends GetxController {
       return true;
     } on InsufficientSavingsException catch (e) {
       Get.find<MessageService>().showError(
-          'بالهدف بس ${Money.format(e.available, decimals: currency.decimals)}');
+          'في الهدف ${Money.format(e.available, decimals: currency.decimals)} فقط');
       return false;
     } on DatabaseException {
-      Get.find<MessageService>().showError('ما قدرنا نحفظ الحركة');
+      Get.find<MessageService>().showError('تعذّر حفظ الحركة');
       return false;
     }
   }

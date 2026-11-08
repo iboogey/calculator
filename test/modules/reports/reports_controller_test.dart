@@ -28,7 +28,7 @@ void main() {
     await repo.add(expense(28000, DateTime(2026, 10, 3), categoryId: 3));
 
     final c = await open();
-    expect(c.shares.map((s) => s.category.name), ['أكل', 'فواتير']);
+    expect(c.shares.map((s) => s.category.name), ['طعام', 'فواتير']);
     expect(c.shares.map((s) => s.percent), [75, 25]);
     expect(c.totalSpent.value, 112000);
     expect(c.totals, hasLength(ReportsController.reportPeriods));
