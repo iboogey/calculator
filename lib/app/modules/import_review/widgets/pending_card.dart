@@ -1,0 +1,117 @@
+import 'package:flutter/material.dart';
+
+import '../../../core/theme/app_colors.dart';
+import '../../../core/utils/currencies.dart';
+import '../../../data/models/pending_item.dart';
+import '../../../widgets/money_text.dart';
+
+/// One imported item with its approve / edit / dismiss buttons.
+class PendingCard extends StatelessWidget {
+  const PendingCard({
+    super.key,
+    required this.item,
+    required this.currency,
+    required this.categoryName,
+    required this.canApprove,
+    required this.onApprove,
+    required this.onEdit,
+    required this.onDismiss,
+    this.duplicateLabel,
+  });
+
+  final PendingItem item;
+  final Currency currency;
+
+  /// Null when the item has no category yet.
+  final String? categoryName;
+
+  /// Whether one tap may approve; otherwise "اعتماد" is disabled.
+  final bool canApprove;
+  final String? duplicateLabel;
+  final VoidCallback onApprove;
+  final VoidCallback onEdit;
+  final VoidCallback onDismiss;
+
+  @override
+  Widget build(BuildContext context) {
+    final isIncome = item.kind == PendingKind.income;
+    final place = item.city;
+    return Card(
+      margin: EdgeInsets.zero,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(14),
+        side: const BorderSide(color: AppColors.border),
+      ),
+      color: AppColors.surface,
+      elevation: 0,
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Text(item.name ?? '—',
+                      style: const TextStyle(
+                          fontSize: 16, fontWeight: FontWeight.w700)),
+                ),
+                MoneyText(
+                  item.amount,
+                  currency: currency,
+                  showPlus: isIncome,
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    color: isIncome ? AppColors.income : AppColors.expense,
+                  ),
+                ),
+              ],
+            ),
+            if (place != null && place.isNotEmpty) ...[
+              const SizedBox(height: 2),
+              Text(place,
+                  style: const TextStyle(color: AppColors.muted, fontSize: 13)),
+            ],
+            const SizedBox(height: 8),
+            Chip(
+              label: Text(categoryName ?? 'بلا تصنيف'),
+              visualDensity: VisualDensity.compact,
+              backgroundColor: categoryName == null
+                  ? AppColors.warningSoft
+                  : AppColors.primarySoft,
+            ),
+            if (duplicateLabel != null) ...[
+              const SizedBox(height: 6),
+              Row(
+                children: [
+                  const Icon(Icons.warning_amber_rounded,
+                      size: 18, color: AppColors.warning),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text('قد يكون مسجّلًا مسبقًا: $duplicateLabel',
+                        style: const TextStyle(
+                            color: AppColors.warning, fontSize: 13)),
+                  ),
+                ],
+              ),
+            ],
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                FilledButton(
+                  onPressed: canApprove ? onApprove : null,
+                  child: const Text('اعتماد'),
+                ),
+                const SizedBox(width: 8),
+                OutlinedButton(onPressed: onEdit, child: const Text('تعديل')),
+                const Spacer(),
+                TextButton(onPressed: onDismiss, child: const Text('تجاهل')),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}

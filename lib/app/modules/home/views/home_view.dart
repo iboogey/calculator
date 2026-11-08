@@ -12,6 +12,7 @@ import '../widgets/balance_card.dart';
 import '../widgets/budget_alert_banner.dart';
 import '../widgets/debts_card.dart';
 import '../widgets/due_obligation_banner.dart';
+import '../widgets/import_banner.dart';
 import '../widgets/month_end_banner.dart';
 import '../widgets/quick_templates_row.dart';
 import '../widgets/recent_transactions.dart';
@@ -53,6 +54,13 @@ class HomeView extends GetView<HomeController> {
                 currency: controller.currency,
                 onTap: controller.openDebts,
               ),
+              if (controller.pendingCount.value > 0) ...[
+                const SizedBox(height: 12),
+                ImportBanner(
+                  count: controller.pendingCount.value,
+                  onTap: controller.openImportReview,
+                ),
+              ],
               if (controller.dueObligation.value case final due?) ...[
                 const SizedBox(height: 12),
                 DueObligationBanner(

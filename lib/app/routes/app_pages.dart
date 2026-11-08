@@ -12,6 +12,8 @@ import '../modules/goal_form/bindings/goal_form_binding.dart';
 import '../modules/goal_form/views/goal_form_view.dart';
 import '../modules/home/bindings/home_binding.dart';
 import '../modules/home/views/home_view.dart';
+import '../modules/import_review/bindings/import_review_binding.dart';
+import '../modules/import_review/views/import_review_view.dart';
 import '../modules/month_end/bindings/month_end_binding.dart';
 import '../modules/month_end/views/month_end_view.dart';
 import '../modules/obligation_form/bindings/obligation_form_binding.dart';
@@ -109,6 +111,11 @@ abstract final class AppPages {
       page: () => const ObligationFormView(),
       binding: ObligationFormBinding(),
       fullscreenDialog: true,
+    ),
+    GetPage(
+      name: Routes.importReview,
+      page: () => const ImportReviewView(),
+      binding: ImportReviewBinding(),
     ),
     GetPage(
       name: Routes.monthEnd,

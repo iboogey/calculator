@@ -14,6 +14,7 @@ import '../../../data/models/transaction_record.dart';
 import '../../../data/repositories/budget_repository.dart';
 import '../../../data/repositories/category_repository.dart';
 import '../../../data/repositories/debt_repository.dart';
+import '../../../data/repositories/import_repository.dart';
 import '../../../data/repositories/savings_repository.dart';
 import '../../../data/repositories/template_repository.dart';
 import '../../../data/repositories/transaction_repository.dart';
@@ -33,6 +34,7 @@ class HomeController extends GetxController {
     required this.settings,
     required this.database,
     required this.debts,
+    required this.imports,
     DateTime Function()? clock,
   }) : _clock = clock ?? DateTime.now;
 
@@ -44,6 +46,7 @@ class HomeController extends GetxController {
   final SettingsService settings;
   final DatabaseService database;
   final DebtRepository debts;
+  final ImportRepository imports;
   final DateTime Function() _clock;
 
   final summary = Rxn<BalanceSummary>();
@@ -58,6 +61,9 @@ class HomeController extends GetxController {
 
   /// Last period's leftover, while the month-end question is unanswered.
   final monthEndOffer = RxnInt();
+
+  /// Imported items waiting for review.
+  final pendingCount = 0.obs;
 
   final debtTotals = const DebtTotals(owedToMe: 0, iOwe: 0).obs;
 
@@ -93,11 +99,14 @@ class HomeController extends GetxController {
     final obligations = DebtSummary.obligations(
         await debts.getObligations(), await debts.paidTotals());
 
+    final pending = await imports.pendingCount();
+
     final byId = {for (final c in allCategories) c.id!: c};
     categoriesById.assignAll(byId);
     recent.assignAll(latest);
     favorites.assignAll(favoriteList);
     period.value = current;
+    pendingCount.value = pending;
     debtTotals.value = DebtSummary.totals(people, obligations);
     dueObligation.value = DebtSummary.mostUrgent(obligations, _clock());
     summary.value = BalanceCalculator.calculate(
@@ -171,6 +180,8 @@ class HomeController extends GetxController {
 
   void openDebts([DebtsTab tab = DebtsTab.people]) =>
       Get.toNamed(Routes.debts, arguments: tab);
+
+  void openImportReview() => Get.toNamed(Routes.importReview);
 
   void openSavings() => Get.toNamed(Routes.savings);
 

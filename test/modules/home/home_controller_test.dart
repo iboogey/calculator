@@ -1,5 +1,7 @@
 import 'package:calculator/app/data/models/debt_entry.dart';
 import 'package:calculator/app/data/models/obligation.dart';
+import 'package:calculator/app/data/models/pending_item.dart';
+import 'package:calculator/app/data/repositories/import_repository.dart';
 import 'package:calculator/app/data/repositories/debt_repository.dart';
 import 'package:calculator/app/data/repositories/transaction_repository.dart';
 import 'package:calculator/app/modules/debts/controllers/debts_controller.dart';
@@ -24,6 +26,7 @@ void main() {
       settings: Get.find(),
       database: Get.find(),
       debts: Get.find(),
+      imports: Get.find(),
       clock: () => now,
     ));
     await controller.load();
@@ -110,5 +113,31 @@ void main() {
     c.toggleSettled();
     expect(c.showSettled.value, isFalse);
     expect(DebtsTab.values, contains(DebtsTab.people));
+  });
+
+  test('pendingCount reflects pending rows and follows changes', () async {
+    final imports = Get.find<ImportRepository>();
+    final c = await open(DateTime(2026, 10, 15));
+    expect(c.pendingCount.value, 0);
+    final at = DateTime(2026, 10, 14);
+    await imports.addPending([
+      PendingItem(
+          source: PendingSource.sms,
+          kind: PendingKind.expense,
+          amount: 1000,
+          occurredAt: at,
+          createdAt: at),
+      PendingItem(
+          source: PendingSource.sms,
+          kind: PendingKind.income,
+          amount: 2000,
+          occurredAt: at,
+          createdAt: at),
+    ]);
+    await settle();
+    expect(c.pendingCount.value, 2);
+    await imports.dismiss((await imports.getPending()).first.id!);
+    await settle();
+    expect(c.pendingCount.value, 1);
   });
 }

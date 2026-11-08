@@ -15,4 +15,5 @@ abstract final class Routes {
   static const debts = '/debts';
   static const debtPerson = '/debt-person';
   static const obligationForm = '/obligation-form';
+  static const importReview = '/import-review';
 }
