@@ -1,4 +1,5 @@
 import 'package:calculator/app/core/logic/bank_sms_parser.dart';
+import 'package:calculator/app/core/theme/app_theme.dart';
 import 'package:calculator/app/data/models/app_settings.dart';
 import 'package:calculator/app/data/models/pending_item.dart';
 import 'package:calculator/app/data/providers/secret_store.dart';
@@ -82,7 +83,9 @@ void main() {
       settings: Get.find(),
     ));
     await tester.runAsync(c.load);
-    await tester.pumpWidget(const MaterialApp(home: ImportReviewView()));
+    // The app's theme: its full-width FilledButton must not break the cards.
+    await tester.pumpWidget(
+        MaterialApp(theme: AppTheme.light, home: const ImportReviewView()));
   }
 
   testWidgets('empty state and title, with no approve-all', (tester) async {

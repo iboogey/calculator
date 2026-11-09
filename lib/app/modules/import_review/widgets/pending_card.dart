@@ -146,6 +146,8 @@ class PendingCard extends StatelessWidget {
             Row(
               children: [
                 FilledButton(
+                  // The theme's full-width minimum can't fit in a Row.
+                  style: FilledButton.styleFrom(minimumSize: const Size(0, 40)),
                   onPressed: onApprove,
                   child: const Text('اعتماد'),
                 ),
