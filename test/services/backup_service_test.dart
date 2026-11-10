@@ -1,7 +1,9 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:calculator/app/data/models/app_settings.dart';
 import 'package:calculator/app/data/models/debt_entry.dart';
+import 'package:calculator/app/data/models/pending_item.dart';
 import 'package:calculator/app/data/models/obligation.dart';
 import 'package:calculator/app/data/models/savings_goal.dart';
 import 'package:calculator/app/data/providers/app_database.dart';
@@ -11,6 +13,7 @@ import 'package:calculator/app/data/repositories/debt_repository.dart';
 import 'package:calculator/app/data/repositories/savings_repository.dart';
 import 'package:calculator/app/data/repositories/transaction_repository.dart';
 import 'package:calculator/app/services/backup_service.dart';
+import 'package:calculator/app/services/database_service.dart';
 import 'package:calculator/app/services/settings_service.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
@@ -221,4 +224,87 @@ void main() {
     expect(Get.find<SettingsService>().settings.value.lastBackupAt, isNull);
   });
 
+  DatabaseService dbService() => Get.find<DatabaseService>();
+
+  Future<void> learn(String key, int categoryId) => dbService()
+      .db
+      .insert('learned_categories', {'name_key': key, 'category_id': categoryId});
+
+  test('export then restore round-trips learned_categories', () async {
+    await learn('shop:SAMPLE SUPER MARKET', foodCategoryId);
+    final json = await backup().exportJson(DateTime(2026, 10, 4));
+    await dbService().db.delete('learned_categories');
+
+    await backup().restore(backup().parse(json));
+    final rows = await dbService().db.query('learned_categories');
+    expect(rows.single['name_key'], 'shop:SAMPLE SUPER MARKET');
+    expect(rows.single['category_id'], foodCategoryId);
+  });
+
+  test('the export has no pending_items or device_state', () async {
+    final data = jsonDecode(await backup().exportJson(DateTime(2026, 10, 4)))
+        as Map<String, dynamic>;
+    final tables = data['tables'] as Map<String, dynamic>;
+    expect(tables.containsKey('pending_items'), isFalse);
+    expect(tables.containsKey('device_state'), isFalse);
+    expect(tables.containsKey('learned_categories'), isTrue);
+  });
+
+  test('restore leaves pending items and the scan point untouched', () async {
+    final json = await backup().exportJson(DateTime(2026, 10, 4));
+    final item = PendingItem(
+      source: PendingSource.sms,
+      kind: PendingKind.expense,
+      amount: 1000,
+      occurredAt: DateTime(2026, 10, 3),
+      name: 'SAMPLE',
+      createdAt: DateTime(2026, 10, 3),
+    );
+    await dbService().db.insert('pending_items', item.toMap()..remove('id'));
+    await dbService()
+        .db
+        .update('device_state', {'last_sms_scan_at': 12345}, where: 'id = 1');
+
+    await backup().restore(backup().parse(json));
+
+    final pending = await dbService().db.query('pending_items');
+    expect(pending, hasLength(1));
+    expect(pending.single['amount'], 1000);
+    expect((await dbService().db.query('device_state')).single['last_sms_scan_at'],
+        12345);
+  });
+
+  test('a version-2 backup restores with defaults for the new settings', () async {
+    await learn('shop:OLD', foodCategoryId);
+    final data = jsonDecode(await backup().exportJson(DateTime(2026, 10, 4)))
+        as Map<String, dynamic>;
+    final tables = data['tables'] as Map<String, dynamic>;
+    tables.remove('learned_categories');
+    final settings = (tables['settings'] as List).single as Map<String, dynamic>;
+    for (final k in [
+      'sms_import_enabled',
+      'ai_provider',
+      'ai_model',
+      'voice_language'
+    ]) {
+      settings.remove(k);
+    }
+    data['schemaVersion'] = 2;
+
+    await backup().restore(backup().parse(jsonEncode(data)));
+    expect(await dbService().db.query('learned_categories'), isEmpty);
+    final restored = Get.find<SettingsService>().settings.value;
+    expect(restored.smsImportEnabled, isFalse);
+    expect(restored.aiProvider, AiProviderKind.none);
+    expect(restored.voiceLanguage, 'ar-JO');
+  });
+
+  test('a learned category pointing at a missing category is rejected', () async {
+    await learn('shop:SAMPLE', foodCategoryId);
+    final data = jsonDecode(await backup().exportJson(DateTime(2026, 10, 4)))
+        as Map<String, dynamic>;
+    (((data['tables'] as Map)['learned_categories'] as List).first as Map)['category_id'] = 9999;
+    expect(() => backup().parse(jsonEncode(data)),
+        throwsA(isA<BackupFormatException>()));
+  });
 }

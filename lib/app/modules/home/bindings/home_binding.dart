@@ -14,6 +14,8 @@ class HomeBinding extends Bindings {
           settings: Get.find(),
           database: Get.find(),
           debts: Get.find(),
+          imports: Get.find(),
+          ai: Get.find(),
         ));
   }
 }

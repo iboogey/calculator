@@ -61,6 +61,7 @@ class BackupService extends GetxService {
   /// Every table, parents before children (the restore insert order).
   static const tables = [
     'categories',
+    'learned_categories',
     'savings_goals',
     'recurring_rules',
     'transactions',
@@ -82,6 +83,9 @@ class BackupService extends GetxService {
     'obligations',
     'obligation_payments',
   };
+
+  /// Tables a version-2 backup does not have.
+  static const _smartImportTables = {'learned_categories'};
 
   static const _notABackup = 'هذا الملف ليس نسخة احتياطية من مصاريفي';
 
@@ -140,6 +144,9 @@ class BackupService extends GetxService {
       if (rows == null && version < 2 && _debtTables.contains(table)) {
         rows = const [];
       }
+      if (rows == null && version < 3 && _smartImportTables.contains(table)) {
+        rows = const [];
+      }
       if (rows is! List) throw const BackupFormatException(_notABackup);
       final list = <Map<String, Object?>>[];
       for (final row in rows) {
@@ -179,6 +186,11 @@ class BackupService extends GetxService {
       'obligations': Obligation.fromMap,
       'obligation_payments': ObligationPayment.fromMap,
       'settings': AppSettings.fromMap,
+      'learned_categories': (row) {
+        if (row['name_key'] is! String || row['category_id'] is! int) {
+          throw const FormatException('learned_categories');
+        }
+      },
       'budget_alerts_sent': (row) {
         if (row['category_id'] is! int ||
             row['period_key'] is! String ||
@@ -203,7 +215,10 @@ class BackupService extends GetxService {
     final people = ids('debt_people');
     final obligations = ids('obligations');
     final transactions = ids('transactions');
-    final ok = tables['debt_entries']!
+    final categories = ids('categories');
+    final ok = tables['learned_categories']!
+            .every((r) => categories.contains(r['category_id'])) &&
+        tables['debt_entries']!
             .every((r) => people.contains(r['person_id'])) &&
         tables['obligation_payments']!.every((r) =>
             obligations.contains(r['obligation_id']) &&

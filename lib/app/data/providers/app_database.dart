@@ -5,7 +5,7 @@ import 'package:sqflite/sqflite.dart';
 /// Opens the SQLite database, creates the schema for every phase and seeds
 /// first-run data.
 abstract final class AppDatabase {
-  static const int version = 2;
+  static const int version = 3;
   static const String fileName = 'masarifi.db';
 
   static Future<Database> open({DatabaseFactory? factory, String? path}) async {
@@ -25,10 +25,11 @@ abstract final class AppDatabase {
 
   static Future<void> _onCreate(Database db, int version) async {
     final batch = db.batch();
-    for (final statement in [...schemaV1, ...schemaV2]) {
+    for (final statement in [...schemaV1, ...schemaV2, ...schemaV3]) {
       batch.execute(statement);
     }
     _seed(batch);
+    batch.insert('device_state', {'id': 1});
     await batch.commit(noResult: true);
   }
 
@@ -44,7 +45,51 @@ abstract final class AppDatabase {
       }
       await batch.commit(noResult: true);
     }
+    if (oldVersion < 3) {
+      final batch = db.batch();
+      for (final statement in schemaV3) {
+        batch.execute(statement);
+      }
+      batch.insert('device_state', {'id': 1});
+      await batch.commit(noResult: true);
+    }
   }
+
+  /// Version 3 additions: smart import (pending items, learned categories,
+  /// device-local scan point) and the import settings.
+  @visibleForTesting
+  static const List<String> schemaV3 = [
+    '''
+    CREATE TABLE pending_items (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      source TEXT NOT NULL CHECK (source IN ('sms', 'voice')),
+      kind TEXT NOT NULL CHECK (kind IN ('income', 'expense', 'debtGave', 'debtTook')),
+      amount INTEGER NOT NULL CHECK (amount > 0),
+      occurred_at INTEGER NOT NULL,
+      sms_type TEXT,
+      name TEXT,
+      city TEXT,
+      suggested_category_id INTEGER REFERENCES categories(id) ON DELETE SET NULL,
+      person_id INTEGER REFERENCES debt_people(id) ON DELETE SET NULL,
+      person_name TEXT,
+      note TEXT,
+      created_at INTEGER NOT NULL
+    )''',
+    '''
+    CREATE TABLE learned_categories (
+      name_key TEXT PRIMARY KEY,
+      category_id INTEGER NOT NULL REFERENCES categories(id) ON DELETE CASCADE
+    )''',
+    '''
+    CREATE TABLE device_state (
+      id INTEGER PRIMARY KEY CHECK (id = 1),
+      last_sms_scan_at INTEGER
+    )''',
+    'ALTER TABLE settings ADD COLUMN sms_import_enabled INTEGER NOT NULL DEFAULT 0',
+    "ALTER TABLE settings ADD COLUMN ai_provider TEXT NOT NULL DEFAULT 'none'",
+    'ALTER TABLE settings ADD COLUMN ai_model TEXT',
+    "ALTER TABLE settings ADD COLUMN voice_language TEXT NOT NULL DEFAULT 'ar-JO'",
+  ];
 
   /// Version 2 additions: debts and obligations.
   @visibleForTesting

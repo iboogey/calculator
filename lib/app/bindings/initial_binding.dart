@@ -3,20 +3,26 @@ import 'package:sqflite/sqflite.dart';
 
 import '../data/providers/file_exchange_provider.dart';
 import '../data/providers/notification_provider.dart';
+import '../data/providers/secret_store.dart';
+import '../data/providers/sms_inbox_provider.dart';
+import '../data/providers/speech_provider.dart';
 import '../data/repositories/budget_repository.dart';
 import '../data/repositories/category_repository.dart';
 import '../data/repositories/debt_repository.dart';
+import '../data/repositories/import_repository.dart';
 import '../data/repositories/recurring_repository.dart';
 import '../data/repositories/savings_repository.dart';
 import '../data/repositories/settings_repository.dart';
 import '../data/repositories/template_repository.dart';
 import '../data/repositories/transaction_repository.dart';
+import '../services/ai_service.dart';
 import '../services/backup_service.dart';
 import '../services/budget_alert_service.dart';
 import '../services/database_service.dart';
 import '../services/message_service.dart';
 import '../services/notification_service.dart';
 import '../services/settings_service.dart';
+import '../services/sms_import_service.dart';
 import '../services/startup_service.dart';
 
 /// Registers the app-wide services and repositories before the first screen.
@@ -28,6 +34,10 @@ abstract final class InitialBinding {
     String? path,
     NotificationProvider? notifications,
     FileExchangeProvider? files,
+    SmsInboxProvider? smsInbox,
+    SecretStore? secrets,
+    SpeechProvider? speech,
+    AiClientFactory? aiClientFactory,
   }) async {
     final database = await Get.putAsync(
         () => DatabaseService(factory: factory, path: path).init(),
@@ -38,7 +48,8 @@ abstract final class InitialBinding {
     final transactions =
         Get.put(TransactionRepository(database), permanent: true);
     Get.put(SavingsRepository(database), permanent: true);
-    Get.put(DebtRepository(database), permanent: true);
+    final debts = Get.put(DebtRepository(database), permanent: true);
+    final imports = Get.put(ImportRepository(database), permanent: true);
     final budgets = Get.put(BudgetRepository(database), permanent: true);
     final recurring = Get.put(RecurringRepository(database), permanent: true);
     Get.put(TemplateRepository(database), permanent: true);
@@ -63,8 +74,38 @@ abstract final class InitialBinding {
       ),
       permanent: true,
     );
+    final inbox = Get.put<SmsInboxProvider>(
+        smsInbox ?? DeviceSmsInboxProvider(),
+        permanent: true);
+    final secretStore = Get.put<SecretStore>(
+        secrets ?? DeviceSecretStore(),
+        permanent: true);
+    final smsImport = Get.put(
+      SmsImportService(
+        inbox: inbox,
+        imports: imports,
+        categories: categories,
+        settings: settings,
+      ),
+      permanent: true,
+    );
+    Get.put(
+      AiService(
+        settings: settings,
+        secrets: secretStore,
+        categories: categories,
+        debts: debts,
+        clientFactory: aiClientFactory,
+      ),
+      permanent: true,
+    );
+    Get.put<SpeechProvider>(speech ?? DeviceSpeechProvider(), permanent: true);
+    // Register any later import services above this line:
+    // StartupService must be created last: init() starts a first scan.
     await Get.putAsync(
-        () => StartupService(recurring: recurring, database: database).init(),
+        () => StartupService(
+                recurring: recurring, database: database, smsImport: smsImport)
+            .init(),
         permanent: true);
     final fileExchange = Get.put<FileExchangeProvider>(
         files ?? DeviceFileExchangeProvider(),

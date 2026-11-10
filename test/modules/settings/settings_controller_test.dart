@@ -13,7 +13,7 @@ void main() {
   setUp(setUpTestServices);
 
   SettingsController open() =>
-      Get.put(SettingsController(settingsService: Get.find(), notifications: Get.find(), backup: Get.find(), files: Get.find()));
+      Get.put(SettingsController(settingsService: Get.find(), notifications: Get.find(), backup: Get.find(), files: Get.find(), smsInbox: Get.find(), smsImport: Get.find(), ai: Get.find(), secrets: Get.find()));
 
   test('changing the start day is saved and shared', () async {
     await open().setStartDay(25);

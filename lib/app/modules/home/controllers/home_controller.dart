@@ -14,14 +14,18 @@ import '../../../data/models/transaction_record.dart';
 import '../../../data/repositories/budget_repository.dart';
 import '../../../data/repositories/category_repository.dart';
 import '../../../data/repositories/debt_repository.dart';
+import '../../../data/repositories/import_repository.dart';
 import '../../../data/repositories/savings_repository.dart';
 import '../../../data/repositories/template_repository.dart';
 import '../../../data/repositories/transaction_repository.dart';
 import '../../../routes/app_routes.dart';
+import '../../../services/ai_service.dart';
 import '../../../services/database_service.dart';
 import '../../../services/message_service.dart';
 import '../../../services/settings_service.dart';
 import '../../debts/controllers/debts_controller.dart';
+import '../../import_review/controllers/import_review_controller.dart';
+import '../../import_review/controllers/voice_controller.dart';
 
 class HomeController extends GetxController {
   HomeController({
@@ -33,6 +37,8 @@ class HomeController extends GetxController {
     required this.settings,
     required this.database,
     required this.debts,
+    required this.imports,
+    required this.ai,
     DateTime Function()? clock,
   }) : _clock = clock ?? DateTime.now;
 
@@ -44,6 +50,8 @@ class HomeController extends GetxController {
   final SettingsService settings;
   final DatabaseService database;
   final DebtRepository debts;
+  final ImportRepository imports;
+  final AiService ai;
   final DateTime Function() _clock;
 
   final summary = Rxn<BalanceSummary>();
@@ -58,6 +66,12 @@ class HomeController extends GetxController {
 
   /// Last period's leftover, while the month-end question is unanswered.
   final monthEndOffer = RxnInt();
+
+  /// Imported items waiting for review.
+  final pendingCount = 0.obs;
+
+  /// Whether an AI key is set, for showing the voice mic enabled.
+  final aiConfigured = false.obs;
 
   final debtTotals = const DebtTotals(owedToMe: 0, iOwe: 0).obs;
 
@@ -93,11 +107,16 @@ class HomeController extends GetxController {
     final obligations = DebtSummary.obligations(
         await debts.getObligations(), await debts.paidTotals());
 
+    final pending = await imports.pendingCount();
+    final configured = await _aiConfigured();
+
     final byId = {for (final c in allCategories) c.id!: c};
     categoriesById.assignAll(byId);
     recent.assignAll(latest);
     favorites.assignAll(favoriteList);
     period.value = current;
+    pendingCount.value = pending;
+    aiConfigured.value = configured;
     debtTotals.value = DebtSummary.totals(people, obligations);
     dueObligation.value = DebtSummary.mostUrgent(obligations, _clock());
     summary.value = BalanceCalculator.calculate(
@@ -171,6 +190,29 @@ class HomeController extends GetxController {
 
   void openDebts([DebtsTab tab = DebtsTab.people]) =>
       Get.toNamed(Routes.debts, arguments: tab);
+
+  void openImportReview() => Get.toNamed(Routes.importReview);
+
+  Future<bool> _aiConfigured() async {
+    try {
+      return await ai.isConfigured;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// Voice entry in one tap: opens the review screen with the voice sheet.
+  /// Without an AI key, explains that voice needs one.
+  Future<void> openVoice() async {
+    final configured = await _aiConfigured();
+    aiConfigured.value = configured;
+    if (!configured) {
+      Get.find<MessageService>().showError(voiceNeedsKeyMessage);
+      return;
+    }
+    Get.toNamed(Routes.importReview,
+        arguments: ImportReviewController.voiceArgument);
+  }
 
   void openSavings() => Get.toNamed(Routes.savings);
 

@@ -83,4 +83,32 @@ void main() {
     expect(changed.reminderMinutes, defaults.reminderMinutes);
     expect(AppSettings.fromMap(changed.toMap()), changed);
   });
+
+  test('AppSettings.fromMap defaults the smart import fields when absent', () {
+    final map = const AppSettings().toMap()
+      ..remove('sms_import_enabled')
+      ..remove('ai_provider')
+      ..remove('ai_model')
+      ..remove('voice_language');
+    final settings = AppSettings.fromMap(map);
+    expect(settings.smsImportEnabled, isFalse);
+    expect(settings.aiProvider, AiProviderKind.none);
+    expect(settings.aiModel, isNull);
+    expect(settings.voiceLanguage, 'ar-JO');
+  });
+
+  test('AppSettings smart import fields round-trip and clearAiModel works', () {
+    final set = const AppSettings().copyWith(
+      smsImportEnabled: true,
+      aiProvider: AiProviderKind.claude,
+      aiModel: 'some-model',
+      voiceLanguage: 'en-US',
+    );
+    expect(set.toMap()['ai_provider'], 'claude');
+    expect(AppSettings.fromMap(set.toMap()), set);
+    expect(set, isNot(const AppSettings()));
+    final cleared = set.copyWith(clearAiModel: true);
+    expect(cleared.aiModel, isNull);
+    expect(cleared.aiProvider, AiProviderKind.claude);
+  });
 }

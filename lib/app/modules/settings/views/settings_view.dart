@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/arabic_count.dart';
 import '../../../core/utils/currencies.dart';
+import '../../../data/models/app_settings.dart';
 import '../../../routes/app_routes.dart';
 import '../../../widgets/app_bottom_nav.dart';
 import '../controllers/settings_controller.dart';
@@ -88,6 +89,66 @@ class SettingsView extends GetView<SettingsController> {
                         ),
                       ),
                     ),
+                ],
+              ),
+            ),
+            const _SectionTitle('الاستيراد الذكي'),
+            Card(
+              child: Column(
+                children: [
+                  if (controller.smsSupported)
+                    SwitchListTile(
+                      title: const Text('استيراد رسائل البنك'),
+                      subtitle:
+                          const Text('تُقرأ الرسائل على الهاتف فقط ولا تُحفظ'),
+                      value: controller.smsImportOn,
+                      onChanged: controller.setSmsImport,
+                    ),
+                  ListTile(
+                    title: const Text('مزوّد الذكاء الاصطناعي'),
+                    trailing: DropdownButton<AiProviderKind>(
+                      value: settings.aiProvider,
+                      underline: const SizedBox.shrink(),
+                      items: const [
+                        DropdownMenuItem(
+                            value: AiProviderKind.none, child: Text('بدون')),
+                        DropdownMenuItem(
+                            value: AiProviderKind.gemini,
+                            child: Text('Gemini')),
+                        DropdownMenuItem(
+                            value: AiProviderKind.claude,
+                            child: Text('Claude')),
+                        DropdownMenuItem(
+                            value: AiProviderKind.openai,
+                            child: Text('OpenAI')),
+                      ],
+                      onChanged: (kind) {
+                        if (kind != null) controller.setAiProvider(kind);
+                      },
+                    ),
+                  ),
+                  if (settings.aiProvider != AiProviderKind.none) ...[
+                    _ApiKeyField(
+                      key: ValueKey('key-${settings.aiProvider.name}'),
+                      controller: controller,
+                    ),
+                    _ModelField(
+                      key: ValueKey('model-${settings.aiProvider.name}'),
+                      controller: controller,
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                      child: Align(
+                        alignment: AlignmentDirectional.centerStart,
+                        child: OutlinedButton(
+                          onPressed: controller.testingConnection.value
+                              ? null
+                              : controller.testAiConnection,
+                          child: const Text('اختبار الاتصال'),
+                        ),
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ),
@@ -201,6 +262,126 @@ class _SectionTitle extends StatelessWidget {
           fontSize: 13,
           fontWeight: FontWeight.w600,
         ),
+      ),
+    );
+  }
+}
+
+/// The key text lives only in this widget's state until saved; the stored key
+/// is never read back or shown.
+class _ApiKeyField extends StatefulWidget {
+  const _ApiKeyField({super.key, required this.controller});
+
+  final SettingsController controller;
+
+  @override
+  State<_ApiKeyField> createState() => _ApiKeyFieldState();
+}
+
+class _ApiKeyFieldState extends State<_ApiKeyField> {
+  final _text = TextEditingController();
+  bool _hidden = true;
+
+  @override
+  void dispose() {
+    _text.dispose();
+    super.dispose();
+  }
+
+  Future<void> _save() async {
+    final value = _text.text;
+    if (value.trim().isEmpty) return;
+    final saved = await widget.controller.saveApiKey(value);
+    if (saved && mounted) _text.clear();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Obx(() {
+      final has = widget.controller.hasApiKey.value;
+      return _build(has);
+    });
+  }
+
+  Widget _build(bool has) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+      child: Row(
+        children: [
+          Expanded(
+            child: TextField(
+              key: const Key('apiKeyField'),
+              controller: _text,
+              obscureText: _hidden,
+              autocorrect: false,
+              enableSuggestions: false,
+              textDirection: TextDirection.ltr,
+              decoration: InputDecoration(
+                labelText: 'مفتاح API',
+                helperText: has ? 'تم حفظ المفتاح' : null,
+                suffixIcon: IconButton(
+                  tooltip: _hidden ? 'إظهار' : 'إخفاء',
+                  icon: Icon(_hidden
+                      ? Icons.visibility_outlined
+                      : Icons.visibility_off_outlined),
+                  onPressed: () => setState(() => _hidden = !_hidden),
+                ),
+              ),
+              onSubmitted: (_) => _save(),
+            ),
+          ),
+          IconButton(
+            key: const Key('saveApiKey'),
+            tooltip: 'حفظ',
+            icon: const Icon(Icons.check),
+            onPressed: _save,
+          ),
+          if (has)
+            IconButton(
+              tooltip: 'حذف المفتاح',
+              icon: const Icon(Icons.delete_outline),
+              onPressed: widget.controller.deleteApiKey,
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ModelField extends StatefulWidget {
+  const _ModelField({super.key, required this.controller});
+
+  final SettingsController controller;
+
+  @override
+  State<_ModelField> createState() => _ModelFieldState();
+}
+
+class _ModelFieldState extends State<_ModelField> {
+  late final _text = TextEditingController(
+      text: widget.controller.settings.aiModel ?? '');
+
+  @override
+  void dispose() {
+    _text.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final kind = widget.controller.settings.aiProvider;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+      child: TextField(
+        controller: _text,
+        autocorrect: false,
+        textDirection: TextDirection.ltr,
+        decoration: InputDecoration(
+          labelText: 'النموذج',
+          hintText: widget.controller.defaultModelFor(kind),
+        ),
+        onSubmitted: widget.controller.setAiModel,
+        onTapOutside: (_) => widget.controller.setAiModel(_text.text),
       ),
     );
   }

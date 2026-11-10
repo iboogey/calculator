@@ -12,6 +12,7 @@ import '../widgets/balance_card.dart';
 import '../widgets/budget_alert_banner.dart';
 import '../widgets/debts_card.dart';
 import '../widgets/due_obligation_banner.dart';
+import '../widgets/import_banner.dart';
 import '../widgets/month_end_banner.dart';
 import '../widgets/quick_templates_row.dart';
 import '../widgets/recent_transactions.dart';
@@ -52,6 +53,25 @@ class HomeView extends GetView<HomeController> {
                 totals: controller.debtTotals.value,
                 currency: controller.currency,
                 onTap: controller.openDebts,
+              ),
+              const SizedBox(height: 12),
+              // The mic is always here, so voice entry is one tap away.
+              Row(
+                children: [
+                  if (controller.pendingCount.value > 0) ...[
+                    Expanded(
+                      child: ImportBanner(
+                        count: controller.pendingCount.value,
+                        onTap: controller.openImportReview,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                  ],
+                  VoiceEntryButton(
+                    enabled: controller.aiConfigured.value,
+                    onTap: controller.openVoice,
+                  ),
+                ],
               ),
               if (controller.dueObligation.value case final due?) ...[
                 const SizedBox(height: 12),
