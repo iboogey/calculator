@@ -262,6 +262,51 @@ void main() {
     expect((await imports.getPending()).single.suggestedCategoryId, 5);
   });
 
+  group('a name last approved as a debt', () {
+    Future<int> learnPerson(String key, String name) async {
+      final db = Get.find<DatabaseService>().db;
+      final id = await db.insert('debt_people', {'name': name, 'created_at': 0});
+      await db.insert('learned_people', {'name_key': key, 'person_id': id});
+      return id;
+    }
+
+    test('money out becomes "I gave" to that person', () async {
+      final sami = await learnPerson('cliq:SAMI KHALED HADDAD', 'سامي');
+      add(smsCliqSent, DateTime(2026, 11, 2));
+      await service.scan(now);
+      final item = (await imports.getPending()).single;
+      expect(item.kind, PendingKind.debtGave);
+      expect(item.personId, sami);
+      expect(item.suggestedCategoryId, isNull);
+      expect(item.amount, 25000);
+    });
+
+    test('money in becomes "I took" from that person', () async {
+      final rana = await learnPerson('cliq:RANA OMAR SALEH', 'رنا');
+      add(smsCliqReceived, DateTime(2026, 11, 2));
+      await service.scan(now);
+      final item = (await imports.getPending()).single;
+      expect(item.kind, PendingKind.debtTook);
+      expect(item.personId, rana);
+      expect(item.suggestedCategoryId, isNull);
+    });
+
+    test('a card purchase skips the AI and becomes a debt', () async {
+      final sami = await learnPerson('shop:SAMPLE SUPER MARKET', 'سامي');
+      var called = false;
+      service.suggester = (_) async {
+        called = true;
+        return 7;
+      };
+      add(smsCard, DateTime(2026, 11, 2));
+      await service.scan(now);
+      final item = (await imports.getPending()).single;
+      expect(called, isFalse);
+      expect(item.kind, PendingKind.debtGave);
+      expect(item.personId, sami);
+    });
+  });
+
   test('pending items never store the message body', () async {
     add(smsCard, DateTime(2026, 11, 2));
     await service.scan(now);

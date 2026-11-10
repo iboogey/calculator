@@ -101,7 +101,6 @@ class ImportReviewView extends GetView<ImportReviewController> {
         item: item,
         currency: controller.currency,
         categoriesFor: controller.categoriesFor,
-        kinds: controller.kindsFor(item),
         people: controller.people.toList(),
         onSave: ({
           required kind,

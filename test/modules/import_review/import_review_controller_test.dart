@@ -359,7 +359,8 @@ void main() {
       expect((await debts().getEntries(huda.id!)).single.amount, 5000);
     });
 
-    test('an SMS item can never become a debt', () async {
+    test('an SMS item can be approved as a debt, and the name is remembered',
+        () async {
       final sami = await debts().addPerson('سامي');
       await imports().addPending([_item(amount: 3500, at: DateTime(2026, 11, 3))]);
       final c = await open();
@@ -369,22 +370,25 @@ void main() {
               amount: 3500,
               date: DateTime(2026, 11, 3),
               personId: sami.id),
-          isFalse);
-      expect(await debts().getEntries(sami.id!), isEmpty);
-      expect(await imports().getPending(), hasLength(1));
+          isTrue);
+      expect((await debts().getEntries(sami.id!)).single.amount, 3500);
+      expect(await imports().getPending(), isEmpty);
+      expect(await imports().learnedPerson('shop:SAMPLE SUPER MARKET'),
+          sami.id);
     });
 
-    test('kindsFor offers debts only for voice items', () async {
+    test('an SMS debt with a known person approves with one tap', () async {
+      final sami = await debts().addPerson('سامي');
+      await imports().addPending([
+        _item(amount: 2500, at: DateTime(2026, 11, 3), category: null)
+            .copyWith(kind: PendingKind.debtTook, personId: sami.id),
+      ]);
       final c = await open();
-      final sms = _item(amount: 1, at: DateTime(2026, 11, 3));
-      final voice = _voiceDebt(kind: PendingKind.expense, amount: 1);
-      expect(c.kindsFor(sms), [PendingKind.expense, PendingKind.income]);
-      expect(c.kindsFor(voice), containsAll([
-        PendingKind.expense,
-        PendingKind.income,
-        PendingKind.debtGave,
-        PendingKind.debtTook,
-      ]));
+      final item = c.items.single;
+      expect(c.canApproveDirectly(item), isTrue);
+      expect(c.personLabel(item), 'سامي');
+      expect(await c.approve(item), isTrue);
+      expect((await debts().getEntries(sami.id!)).single.amount, -2500);
     });
 
     test('load lists the debt people and labels a voice debt', () async {

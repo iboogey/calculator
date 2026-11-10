@@ -72,6 +72,7 @@ class SmsImportService extends GetxService {
     final incomeOther = byIcon('income_other');
     final other = byIcon('other');
     final learned = <(String, TransactionKind), int?>{};
+    final learnedPeople = <String, int?>{};
     final suggested = <String, int?>{};
     final items = <PendingItem>[];
     var newest = after;
@@ -87,6 +88,28 @@ class SmsImportService extends GetxService {
       final income = sms.type == BankSmsType.cliqReceived;
       final kind = income ? TransactionKind.income : TransactionKind.expense;
       final key = learnedKey(sms.type, sms.name);
+      // Last approved as a debt: suggest the same person again, the
+      // direction following the money (out: I gave; in: I took).
+      final personId = learnedPeople.containsKey(key)
+          ? learnedPeople[key]
+          : learnedPeople[key] = await imports.learnedPerson(key);
+      if (personId != null) {
+        items.add(
+          PendingItem(
+            source: PendingSource.sms,
+            kind: income ? PendingKind.debtTook : PendingKind.debtGave,
+            amount: sms.amount,
+            occurredAt: message.date,
+            smsType: sms.type,
+            name: sms.name,
+            city: sms.city,
+            personId: personId,
+            note: sms.name,
+            createdAt: now,
+          ),
+        );
+        continue;
+      }
       var categoryId = learned.containsKey((key, kind))
           ? learned[(key, kind)]
           : learned[(key, kind)] = await imports.learnedCategory(key, kind);

@@ -27,7 +27,7 @@ void main() {
   test('fresh database has the debt tables', () async {
     final db = (await openTestDatabase()).db;
     expect(await _tableNames(db), containsAll(_debtTables));
-    expect(AppDatabase.version, 3);
+    expect(AppDatabase.version, 4);
   });
 
   test('upgrading a version-1 database keeps its data and adds the debt tables',
@@ -72,7 +72,7 @@ void main() {
     expect(await _tableNames(db), containsAll(_debtTables));
     expect(
       (await db.rawQuery('PRAGMA user_version')).single['user_version'],
-      3,
+      AppDatabase.version,
     );
   });
 
@@ -135,8 +135,57 @@ void main() {
     expect(settings.voiceLanguage, 'ar-JO');
     expect(
       (await db.rawQuery('PRAGMA user_version')).single['user_version'],
-      3,
+      AppDatabase.version,
     );
+  });
+
+  test('upgrading a version-3 database keeps its data and adds learned_people',
+      () async {
+    sqfliteFfiInit();
+    final dir = Directory.systemTemp.createTempSync();
+    addTearDown(() => dir.deleteSync(recursive: true));
+    final path = p.join(dir.path, 'v3.db');
+
+    final v3 = await databaseFactoryFfi.openDatabase(
+      path,
+      options: OpenDatabaseOptions(
+        version: 3,
+        onConfigure: (db) => db.execute('PRAGMA foreign_keys = ON'),
+        onCreate: (db, _) async {
+          for (final s in [
+            ...AppDatabase.schemaV1,
+            ...AppDatabase.schemaV2,
+            ...AppDatabase.schemaV3,
+          ]) {
+            await db.execute(s);
+          }
+          await db.insert('settings', {'id': 1});
+          await db.insert('device_state', {'id': 1});
+          await db.insert('debt_people', {'name': 'سامي', 'created_at': 0});
+        },
+      ),
+    );
+    expect(await _tableNames(v3), isNot(contains('learned_people')));
+    await v3.close();
+
+    final db =
+        await AppDatabase.open(factory: databaseFactoryFfi, path: path);
+    addTearDown(db.close);
+    expect(await db.query('debt_people'), hasLength(1));
+    expect(await _tableNames(db), contains('learned_people'));
+    expect(
+      (await db.rawQuery('PRAGMA user_version')).single['user_version'],
+      4,
+    );
+  });
+
+  test('deleting a person forgets the names learned for them', () async {
+    final db = (await openTestDatabase()).db;
+    final id = await db.insert('debt_people', {'name': 'سامي', 'created_at': 0});
+    await db.insert(
+        'learned_people', {'name_key': 'cliq:SAMI AHMAD', 'person_id': id});
+    await db.delete('debt_people', where: 'id = ?', whereArgs: [id]);
+    expect(await db.query('learned_people'), isEmpty);
   });
 
   test('deleting a person cascades to their entries', () async {

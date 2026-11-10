@@ -70,6 +70,7 @@ class BackupService extends GetxService {
     'quick_templates',
     'budget_alerts_sent',
     'debt_people',
+    'learned_people',
     'debt_entries',
     'obligations',
     'obligation_payments',
@@ -86,6 +87,9 @@ class BackupService extends GetxService {
 
   /// Tables a version-2 backup does not have.
   static const _smartImportTables = {'learned_categories'};
+
+  /// Tables a version-3 backup does not have.
+  static const _learnedPeopleTables = {'learned_people'};
 
   static const _notABackup = 'هذا الملف ليس نسخة احتياطية من مصاريفي';
 
@@ -147,6 +151,11 @@ class BackupService extends GetxService {
       if (rows == null && version < 3 && _smartImportTables.contains(table)) {
         rows = const [];
       }
+      if (rows == null &&
+          version < 4 &&
+          _learnedPeopleTables.contains(table)) {
+        rows = const [];
+      }
       if (rows is! List) throw const BackupFormatException(_notABackup);
       final list = <Map<String, Object?>>[];
       for (final row in rows) {
@@ -191,6 +200,11 @@ class BackupService extends GetxService {
           throw const FormatException('learned_categories');
         }
       },
+      'learned_people': (row) {
+        if (row['name_key'] is! String || row['person_id'] is! int) {
+          throw const FormatException('learned_people');
+        }
+      },
       'budget_alerts_sent': (row) {
         if (row['category_id'] is! int ||
             row['period_key'] is! String ||
@@ -218,6 +232,8 @@ class BackupService extends GetxService {
     final categories = ids('categories');
     final ok = tables['learned_categories']!
             .every((r) => categories.contains(r['category_id'])) &&
+        tables['learned_people']!
+            .every((r) => people.contains(r['person_id'])) &&
         tables['debt_entries']!
             .every((r) => people.contains(r['person_id'])) &&
         tables['obligation_payments']!.every((r) =>

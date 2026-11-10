@@ -190,7 +190,8 @@ void main() {
         .map((r) => r['name'])
         .toSet();
     expect(tables, {
-      'pending_items', 'learned_categories', 'device_state', 'debt_people',
+      'pending_items', 'learned_categories', 'learned_people', 'device_state',
+      'debt_people',
       'debt_entries', 'obligations', 'obligation_payments', 'categories',
       'savings_goals', 'recurring_rules', 'transactions', 'budgets',
       'savings_movements', 'quick_templates', 'budget_alerts_sent', 'settings',
@@ -246,5 +247,79 @@ void main() {
     expect(await repo.getPending(), [item]);
     expect(await database.db.query('transactions'), isEmpty);
     expect(await database.db.query('learned_categories'), isEmpty);
+  });
+  group('learned people (bank items approved as debts)', () {
+    Future<int> person(String name) => database.db.insert('debt_people',
+        {'name': name, 'created_at': DateTime(2026, 11, 1).millisecondsSinceEpoch});
+
+    PendingItem cliq() => PendingItem(
+          source: PendingSource.sms,
+          kind: PendingKind.expense,
+          amount: 20000,
+          occurredAt: DateTime(2026, 11, 4),
+          smsType: BankSmsType.cliqSent,
+          name: 'SAMI AHMAD',
+          createdAt: DateTime(2026, 11, 4),
+        );
+
+    DebtEntry entry(int personId) => DebtEntry(
+        personId: personId,
+        amount: 20000,
+        date: DateTime(2026, 11, 4),
+        createdAt: DateTime(2026, 11, 4));
+
+    Future<void> approveDebt(int personId) async {
+      await repo.addPending([cliq()]);
+      await repo.approveAsDebt(
+          (await repo.getPending()).single, entry(personId));
+    }
+
+    Future<void> approveExpense() async {
+      await repo.addPending([cliq()]);
+      await repo.approveAsTransaction((await repo.getPending()).single,
+          expense(20000, DateTime(2026, 11, 4), categoryId: 2));
+    }
+
+    test('approving a bank item as a debt remembers the person', () async {
+      final sami = await person('سامي');
+      await approveDebt(sami);
+      expect(await repo.learnedPerson('cliq:SAMI AHMAD'), sami);
+    });
+
+    test('the last choice wins: a debt replaces a learned category',
+        () async {
+      await approveExpense();
+      await approveDebt(await person('سامي'));
+      expect(
+          await repo.learnedCategory(
+              'cliq:SAMI AHMAD', TransactionKind.expense),
+          isNull);
+    });
+
+    test('the last choice wins: a category replaces a learned person',
+        () async {
+      await approveDebt(await person('سامي'));
+      await approveExpense();
+      expect(await repo.learnedPerson('cliq:SAMI AHMAD'), isNull);
+      expect(
+          await repo.learnedCategory(
+              'cliq:SAMI AHMAD', TransactionKind.expense),
+          2);
+    });
+
+    test('a deleted person is forgotten', () async {
+      final sami = await person('سامي');
+      await approveDebt(sami);
+      await database.db.delete('debt_entries');
+      await database.db.delete('debt_people', where: 'id = ?', whereArgs: [sami]);
+      expect(await repo.learnedPerson('cliq:SAMI AHMAD'), isNull);
+    });
+
+    test('a voice debt learns nothing', () async {
+      final sami = await person('سامي');
+      await repo.addPending([voice().copyWith(kind: PendingKind.debtGave)]);
+      await repo.approveAsDebt((await repo.getPending()).single, entry(sami));
+      expect(await database.db.query('learned_people'), isEmpty);
+    });
   });
 }

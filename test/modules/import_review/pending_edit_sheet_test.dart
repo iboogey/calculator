@@ -1,3 +1,4 @@
+import 'package:calculator/app/core/logic/bank_sms_parser.dart';
 import 'package:calculator/app/core/utils/currencies.dart';
 import 'package:calculator/app/data/models/debt_person.dart';
 import 'package:calculator/app/data/models/enums.dart';
@@ -50,16 +51,13 @@ typedef _Save = Future<bool> Function({
 });
 
 Future<void> _pump(WidgetTester tester, PendingItem item,
-        {_Save? onSave,
-        List<PendingKind> kinds = const [PendingKind.expense, PendingKind.income],
-        List<DebtPerson> people = const []}) =>
+        {_Save? onSave, List<DebtPerson> people = const []}) =>
     tester.pumpWidget(MaterialApp(
       home: Scaffold(
         body: PendingEditSheet(
           item: item,
           currency: Currencies.jod,
           categoriesFor: (kind) => kind == TransactionKind.expense ? [_food] : [],
-          kinds: kinds,
           people: people,
           onSave: onSave ??
               ({required kind,
@@ -73,8 +71,6 @@ Future<void> _pump(WidgetTester tester, PendingItem item,
         ),
       ),
     ));
-
-const _allKinds = PendingKind.values;
 
 Finder _save() => find.widgetWithText(FilledButton, 'حفظ واعتماد');
 
@@ -120,11 +116,78 @@ void main() {
     expect(savedCategory, 1);
   });
 
-  testWidgets('an SMS item offers only expense and income', (tester) async {
-    await _pump(tester, _item());
+  testWidgets('an SMS item can become a debt, with the person picked',
+      (tester) async {
+    PendingKind? savedKind;
+    int? savedPerson;
+    await _pump(tester, _item(category: 1),
+        people: [_sami],
+        onSave: ({required kind,
+            required amount,
+            required date,
+            categoryId,
+            personId,
+            personName,
+            note}) async {
+      savedKind = kind;
+      savedPerson = personId;
+      return true;
+    });
     expect(find.text('مصروف'), findsOneWidget);
     expect(find.text('دخل'), findsOneWidget);
-    expect(find.text('دين'), findsNothing);
+    await tester.tap(find.text('دين'));
+    await tester.pump();
+    expect(_save(), findsOneWidget);
+    expect(tester.widget<FilledButton>(_save()).onPressed, isNull);
+    await tester.tap(find.text('سامي'));
+    await tester.pump();
+    await tester.tap(_save());
+    await tester.pump();
+    // Money out: "I gave".
+    expect(savedKind, PendingKind.debtGave);
+    expect(savedPerson, 3);
+  });
+
+  testWidgets('money in switched to a debt starts on "I took"',
+      (tester) async {
+    PendingKind? savedKind;
+    await _pump(tester, _item().copyWith(kind: PendingKind.income),
+        people: [_sami],
+        onSave: ({required kind,
+            required amount,
+            required date,
+            categoryId,
+            personId,
+            personName,
+            note}) async {
+      savedKind = kind;
+      return true;
+    });
+    await tester.tap(find.text('دين'));
+    await tester.pump();
+    await tester.tap(find.text('سامي'));
+    await tester.pump();
+    await tester.tap(_save());
+    await tester.pump();
+    expect(savedKind, PendingKind.debtTook);
+  });
+
+  testWidgets('switching a bank item to a debt starts with no person',
+      (tester) async {
+    await _pump(
+        tester,
+        _item().copyWith(
+            smsType: BankSmsType.cliqSent, name: 'SAMI KHALED HADDAD'),
+        people: [_sami]);
+    await tester.tap(find.text('دين'));
+    await tester.pump();
+    expect(
+        tester
+            .widget<TextField>(find.widgetWithText(TextField, 'شخص جديد'))
+            .controller!
+            .text,
+        isEmpty);
+    expect(tester.widget<FilledButton>(_save()).onPressed, isNull);
   });
 
   testWidgets('a voice debt opens with its person and direction', (tester) async {
@@ -132,7 +195,6 @@ void main() {
     int? savedPerson;
     int? savedAmount;
     await _pump(tester, _voice(PendingKind.debtGave, personId: 3),
-        kinds: _allKinds,
         people: [_sami],
         onSave: ({required kind,
             required amount,
@@ -164,7 +226,6 @@ void main() {
     int? savedPerson;
     String? savedName;
     await _pump(tester, _voice(PendingKind.debtTook, personName: 'رنا'),
-        kinds: _allKinds,
         people: [_sami],
         onSave: ({required kind,
             required amount,
@@ -187,7 +248,6 @@ void main() {
   testWidgets('a spoken name of an existing person selects them', (tester) async {
     int? savedPerson;
     await _pump(tester, _voice(PendingKind.debtGave, personName: ' سامي '),
-        kinds: _allKinds,
         people: [_sami],
         onSave: ({required kind,
             required amount,
@@ -209,7 +269,6 @@ void main() {
     PendingKind? savedKind;
     String? savedName;
     await _pump(tester, _voice(PendingKind.expense),
-        kinds: _allKinds,
         people: [_sami],
         onSave: ({required kind,
             required amount,

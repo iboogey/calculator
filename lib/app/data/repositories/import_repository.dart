@@ -12,8 +12,8 @@ class PendingItemGoneException implements Exception {
   const PendingItemGoneException();
 }
 
-/// Pending imported items, the learned shop/payee -> category memory and the
-/// device-local SMS scan point.
+/// Pending imported items, what was last chosen for each shop or payee (a
+/// category, or a debt person) and the device-local SMS scan point.
 class ImportRepository {
   ImportRepository(this._database);
 
@@ -21,6 +21,7 @@ class ImportRepository {
 
   static const _pending = 'pending_items';
   static const _learned = 'learned_categories';
+  static const _learnedPeople = 'learned_people';
   static const _state = 'device_state';
 
   // ---- Scan point ----
@@ -119,6 +120,13 @@ class ImportRepository {
     return rows.isEmpty ? null : rows.first['category_id'] as int;
   }
 
+  /// The debt person [key] was last approved for, if any.
+  Future<int?> learnedPerson(String key) async {
+    final rows = await _database.db.query(_learnedPeople,
+        columns: ['person_id'], where: 'name_key = ?', whereArgs: [key]);
+    return rows.isEmpty ? null : rows.first['person_id'] as int;
+  }
+
   // ---- Approval ----
 
   /// Deletes [item]'s pending row inside [txn]; throws
@@ -139,6 +147,9 @@ class ImportRepository {
       final id = await txn.insert('transactions', record.toMap()..remove('id'));
       final key = item.learnKey;
       if (key != null) {
+        // The last choice wins: a category replaces a remembered person.
+        await txn.delete(_learnedPeople,
+            where: 'name_key = ?', whereArgs: [key]);
         await txn.insert(
           _learned,
           {'name_key': key, 'category_id': record.categoryId},
@@ -156,7 +167,19 @@ class ImportRepository {
   Future<DebtEntry> approveAsDebt(PendingItem item, DebtEntry entry) async {
     final id = await _database.db.transaction((txn) async {
       await _takePending(txn, item);
-      return txn.insert('debt_entries', entry.toMap()..remove('id'));
+      final id =
+          await txn.insert('debt_entries', entry.toMap()..remove('id'));
+      final key = item.learnKey;
+      if (key != null) {
+        // The last choice wins: a person replaces a remembered category.
+        await txn.delete(_learned, where: 'name_key = ?', whereArgs: [key]);
+        await txn.insert(
+          _learnedPeople,
+          {'name_key': key, 'person_id': entry.personId},
+          conflictAlgorithm: ConflictAlgorithm.replace,
+        );
+      }
+      return id;
     });
     _database.notifyChanged();
     return entry.withId(id);

@@ -19,7 +19,7 @@ The app works offline; AI features only go online after you add your own key.
   a due reminder on Home and a "after settling debts" preview of what is left (view only)
 - Daily reminder notification (default 21:00), all scheduled on the device
 - Backup to a JSON file (shared wherever you choose, schema version 2 including debts) and restore from it (v1 files still work)
-- Smart import: bank SMS on the phone are read into a review list (approve or dismiss each one); Android only. Note: the `READ_SMS` permission blocks a future Play Store release
+- Smart import: bank SMS on the phone are read into a review list (approve, edit — including into a debt — or dismiss each one); a name last approved as a debt comes in as a debt to the same person; Android only. Note: the `READ_SMS` permission blocks a future Play Store release
 - AI (optional): pick Gemini, Claude or OpenAI in Settings and add your own API key (kept in the device's secure storage, never in the database or backups); it suggests categories for unknown shops. Only the shop name and city are sent. Test the connection from Settings
 - Voice entry (needs an AI key): say an expense, income or debt, fix the words, and it lands in the review list. Android speech recognition may process your voice online
 - Settings: month start day, currency, reminder, fixed costs, favorites, backup
