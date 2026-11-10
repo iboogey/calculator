@@ -19,7 +19,7 @@ The user types every expense by hand. Their bank already texts them about every 
 - Each pending item arrives pre-filled: kind, amount (exact, in fils), date, shop or person, and a suggested category.
 - The user can approve, edit or dismiss each item. Nothing is saved until they approve.
 - Possible duplicates (recurring rules, existing transactions) are flagged on the item.
-- **Bank texts only ever become expenses or income (decided by the user, 2026-11-09).** Debts are added only by hand (the existing Debts screens) or by voice. When a CliQ transfer was really a loan, the user dismisses it and records the debt themselves.
+- ~~Bank texts only ever become expenses or income (decided by the user, 2026-11-09).~~ **Changed by the user, 2026-11-10:** a bank item can be edited into a debt (I gave / I took, with a person), like a voice item. When a shop or CliQ name was last approved as a debt, its next bank text arrives already set to a debt with that person (§6.4).
 - The app remembers the category chosen for each shop, so the user corrects a shop only once.
 - An optional AI provider (Gemini, Claude or OpenAI, with the user's own key) suggests categories for shops never seen before, and powers voice entry.
 - Voice entry: press the mic, speak, and get a pending item to review.
@@ -103,7 +103,7 @@ All accounts count. The user has two, and both are imported.
 | Bank fee | Expense | From memory, otherwise "أخرى" |
 | Voice | Expense, income or a debt entry, whatever the AI extracted (§6.7) | From the AI's answer |
 
-An SMS item can only switch between expense and income in the edit sheet. It **never** offers a debt option. The user records debts by hand or by voice and dismisses the SMS.
+*(Changed 2026-11-10.)* An SMS item can switch to expense, income or debt in the edit sheet. Switching to a debt starts with no person, in the direction the money moved: money out (card purchase, CliQ sent, fee) is "I gave", money in (CliQ received) is "I took". A name last approved as a debt arrives as a debt to that person, in the same direction rule, without asking the AI.
 
 ### 6.4 Memory (learning from approvals)
 
@@ -182,6 +182,7 @@ A new section **"الاستيراد الذكي"** in Settings:
 - New tables, plus a migration from DB version 2 to 3:
   - `pending_items` (only items waiting for review; rows are deleted on approve or dismiss): id, source (`sms` / `voice`), kind, amount (int fils), occurred_at, merchant, city, person_name, raw_type (template #), suggested_category_id, suggested_person_id (voice debts only), note, created_at. No account, no balance, no SMS text.
   - `learned_categories`: name_key PK (prefixed `shop:` / `cliq:` / `fee:`), category_id (FK `categories` ON DELETE CASCADE)
+  - *(v4, 2026-11-10)* `learned_people`: name_key PK (same keys), person_id (FK `debt_people` ON DELETE CASCADE). Approving a bank item as a debt stores the key here and removes it from `learned_categories`; approving it as a transaction does the reverse, so the last choice wins. Backed up from schema version 4; version 1–3 files restore with it empty.
 - New `settings` columns: `sms_import_enabled`, `ai_provider`, `ai_model`, `voice_language`. The SMS scan point is stored outside the backed-up `settings` row (a device-only table or local key, builder's call), so restore never touches it.
 - **Backup:** schema version 3 includes `learned_categories` and the new settings columns. `pending_items` and the scan point are **not** backed up. A restore leaves both as they are on the device. Version 1 and 2 files still restore.
 - A restore never re-imports SMS (the scan point isn't in the backup).

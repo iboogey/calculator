@@ -5,7 +5,7 @@ import 'package:sqflite/sqflite.dart';
 /// Opens the SQLite database, creates the schema for every phase and seeds
 /// first-run data.
 abstract final class AppDatabase {
-  static const int version = 3;
+  static const int version = 4;
   static const String fileName = 'masarifi.db';
 
   static Future<Database> open({DatabaseFactory? factory, String? path}) async {
@@ -25,7 +25,12 @@ abstract final class AppDatabase {
 
   static Future<void> _onCreate(Database db, int version) async {
     final batch = db.batch();
-    for (final statement in [...schemaV1, ...schemaV2, ...schemaV3]) {
+    for (final statement in [
+      ...schemaV1,
+      ...schemaV2,
+      ...schemaV3,
+      ...schemaV4,
+    ]) {
       batch.execute(statement);
     }
     _seed(batch);
@@ -53,7 +58,24 @@ abstract final class AppDatabase {
       batch.insert('device_state', {'id': 1});
       await batch.commit(noResult: true);
     }
+    if (oldVersion < 4) {
+      final batch = db.batch();
+      for (final statement in schemaV4) {
+        batch.execute(statement);
+      }
+      await batch.commit(noResult: true);
+    }
   }
+
+  /// Version 4 addition: the bank names last approved as a debt, and to whom.
+  @visibleForTesting
+  static const List<String> schemaV4 = [
+    '''
+    CREATE TABLE learned_people (
+      name_key TEXT PRIMARY KEY,
+      person_id INTEGER NOT NULL REFERENCES debt_people(id) ON DELETE CASCADE
+    )''',
+  ];
 
   /// Version 3 additions: smart import (pending items, learned categories,
   /// device-local scan point) and the import settings.

@@ -307,4 +307,46 @@ void main() {
     expect(() => backup().parse(jsonEncode(data)),
         throwsA(isA<BackupFormatException>()));
   });
+  Future<int> learnPerson(String key) async {
+    final id = await dbService()
+        .db
+        .insert('debt_people', {'name': 'سامي', 'created_at': 0});
+    await dbService()
+        .db
+        .insert('learned_people', {'name_key': key, 'person_id': id});
+    return id;
+  }
+
+  test('export then restore round-trips learned_people', () async {
+    final sami = await learnPerson('cliq:SAMI AHMAD');
+    final json = await backup().exportJson(DateTime(2026, 10, 4));
+    await dbService().db.delete('learned_people');
+
+    await backup().restore(backup().parse(json));
+    final rows = await dbService().db.query('learned_people');
+    expect(rows.single['name_key'], 'cliq:SAMI AHMAD');
+    expect(rows.single['person_id'], sami);
+  });
+
+  test('a version-3 backup restores with no learned people', () async {
+    await learnPerson('cliq:SAMI AHMAD');
+    final data = jsonDecode(await backup().exportJson(DateTime(2026, 10, 4)))
+        as Map<String, dynamic>;
+    (data['tables'] as Map).remove('learned_people');
+    data['schemaVersion'] = 3;
+
+    await backup().restore(backup().parse(jsonEncode(data)));
+    expect(await dbService().db.query('learned_people'), isEmpty);
+    expect(await dbService().db.query('debt_people'), hasLength(1));
+  });
+
+  test('a learned person pointing at a missing person is rejected', () async {
+    await learnPerson('cliq:SAMI AHMAD');
+    final data = jsonDecode(await backup().exportJson(DateTime(2026, 10, 4)))
+        as Map<String, dynamic>;
+    (((data['tables'] as Map)['learned_people'] as List).first
+        as Map)['person_id'] = 9999;
+    expect(() => backup().parse(jsonEncode(data)),
+        throwsA(isA<BackupFormatException>()));
+  });
 }

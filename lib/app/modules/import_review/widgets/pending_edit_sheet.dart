@@ -22,9 +22,8 @@ typedef PendingSave = Future<bool> Function({
   String? note,
 });
 
-/// Edits an imported item, then approves it. [kinds] says what it may become
-/// (debts only for voice items). [onSave] returns true when the item was
-/// saved, which closes the sheet.
+/// Edits an imported item, then approves it as an expense, income or debt.
+/// [onSave] returns true when the item was saved, which closes the sheet.
 class PendingEditSheet extends StatefulWidget {
   const PendingEditSheet({
     super.key,
@@ -32,14 +31,12 @@ class PendingEditSheet extends StatefulWidget {
     required this.currency,
     required this.categoriesFor,
     required this.onSave,
-    this.kinds = const [PendingKind.expense, PendingKind.income],
     this.people = const [],
   });
 
   final PendingItem item;
   final Currency currency;
   final List<TransactionCategory> Function(TransactionKind kind) categoriesFor;
-  final List<PendingKind> kinds;
 
   /// Existing debt people, for the person picker.
   final List<DebtPerson> people;
@@ -58,18 +55,12 @@ class _PendingEditSheetState extends State<PendingEditSheet> {
     PendingKind.debtGave || PendingKind.debtTook => _Mode.debt,
   };
 
-  late final List<_Mode> _modes = [
-    if (widget.kinds.contains(PendingKind.expense)) _Mode.expense,
-    if (widget.kinds.contains(PendingKind.income)) _Mode.income,
-    if (widget.kinds.contains(PendingKind.debtGave) ||
-        widget.kinds.contains(PendingKind.debtTook))
-      _Mode.debt,
-  ];
-
   TransactionKind get _kind =>
       _mode == _Mode.income ? TransactionKind.income : TransactionKind.expense;
 
-  late bool _gave = widget.item.kind != PendingKind.debtTook;
+  /// Money that came in (income, or a debt I took) starts on "I took".
+  late bool _gave = widget.item.kind != PendingKind.debtTook &&
+      widget.item.kind != PendingKind.income;
 
   /// The suggested person, matched by id or by trimmed, case-insensitive name.
   late int? _personId = () {
@@ -184,7 +175,7 @@ class _PendingEditSheetState extends State<PendingEditSheet> {
               SegmentedButton<_Mode>(
                 showSelectedIcon: false,
                 segments: [
-                  for (final mode in _modes)
+                  for (final mode in _Mode.values)
                     ButtonSegment(
                       value: mode,
                       label: Text(switch (mode) {

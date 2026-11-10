@@ -69,13 +69,7 @@ class ImportReviewController extends GetxController {
       .where((c) => c.kind == kind && !c.isArchived)
       .toList();
 
-  /// What [item] may become: SMS items never become debts (spec §6.3).
-  List<PendingKind> kindsFor(PendingItem item) =>
-      item.source == PendingSource.voice
-          ? PendingKind.values
-          : const [PendingKind.expense, PendingKind.income];
-
-  /// The person of a voice debt: their current name when known, otherwise
+  /// The person of a debt item: their current name when known, otherwise
   /// the name as spoken.
   String? personLabel(PendingItem item) {
     final id = item.personId;
@@ -198,7 +192,6 @@ class ImportReviewController extends GetxController {
     String? note,
   }) {
     if (_isDebt(kind)) {
-      if (!kindsFor(item).contains(kind)) return Future.value(false);
       return _saveDebt(item, kind, amount, date, personId, personName, note);
     }
     final transactionKind = _transactionKind(kind);
